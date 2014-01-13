@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{6EF1357E-0B06-40B5-B45E-835AC298E226}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientCommandline", "ClientCommandline\ClientCommandline.csproj", "{9ED22B1A-5948-4061-B96E-C813ACF0BC48}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Squirrel", "Packets\Squirrel.csproj", "{5B89B1E3-0FE5-42E7-8009-1841E1388CA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{6EF1357E-0B06-40B5-B45E-835AC298E226}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6EF1357E-0B06-40B5-B45E-835AC298E226}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6EF1357E-0B06-40B5-B45E-835AC298E226}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9ED22B1A-5948-4061-B96E-C813ACF0BC48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9ED22B1A-5948-4061-B96E-C813ACF0BC48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9ED22B1A-5948-4061-B96E-C813ACF0BC48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9ED22B1A-5948-4061-B96E-C813ACF0BC48}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B89B1E3-0FE5-42E7-8009-1841E1388CA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B89B1E3-0FE5-42E7-8009-1841E1388CA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B89B1E3-0FE5-42E7-8009-1841E1388CA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B89B1E3-0FE5-42E7-8009-1841E1388CA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
