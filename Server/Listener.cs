@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using Squirrel.Data;
@@ -55,13 +56,14 @@ namespace Squirrel.Server
                     lock (Application.ActiveConnections)
                     {
                         // Iterate through existing connections to determine a new client ID
-                        for (int i = 0; i < Application.ActiveConnections.Count && !assigned; ++i, ++clientId)
+                        for (int i = 0; !assigned && i < Application.ActiveConnections.Count; ++i)
                         {
-                            if (Application.ActiveConnections[i].ClientId == clientId)
-                                continue;
-
-                            clientId = Application.ActiveConnections[i].ClientId;
-                            assigned = true;
+                            // If there isn't a connection in this collection with the same client ID as our proposed
+                            // client ID, assign it
+                            if (Application.ActiveConnections.FirstOrDefault(it => it.ClientId == clientId) == null)
+                                assigned = true;
+                            else
+                                clientId += 1;
                         }
 
                         if (!assigned)
