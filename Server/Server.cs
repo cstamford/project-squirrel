@@ -1,20 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using Squirrel.Data;
 
 namespace Squirrel.Server
 {
     public class Server
     {
+        private const float UPDATES_PER_SECOND = 33.0f;
+        private const float UPDATES_TICK_TIME = 1000.0f / UPDATES_PER_SECOND;
         private const string SERVER_PREFIX = "[SERVER]: ";
+
+        private readonly Stopwatch m_timer = new Stopwatch();
         private bool m_running = true;
 
         public void run()
         {
+            m_timer.Start();
             write("Thread started");
 
             while (m_running)
             {
+                // Make sure we only send out network packets once every UPDATES_TICK_TIME
+                if (m_timer.ElapsedMilliseconds < UPDATES_TICK_TIME)
+                    continue;
+
                 // Acquire mutex lock on the connection list
                 lock (Application.ActiveConnections)
                 {
@@ -40,6 +49,9 @@ namespace Squirrel.Server
                         }
                     }
                 }
+
+                // Restart the timer
+                m_timer.Restart();
             }
 
             write("Thread ended");

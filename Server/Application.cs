@@ -72,18 +72,17 @@ namespace Squirrel.Server
             {
                 case "QUIT":
 
-                    m_listener.setRunning(false);
-
                     // Abort the thread -- it is blocking
+                    m_listener.setRunning(false);
                     m_listenerThread.Abort();
                     m_listenerThread.Join();
 
+                    // Join the server thread
                     m_server.setRunning(false);
                     m_serverThread.Join();
 
+                    // Set the UI thread running state to off
                     m_running = false;
-
-                    Thread.Sleep(2000);
 
                     break;
 
@@ -107,7 +106,7 @@ namespace Squirrel.Server
                                 connection.ClientId = -1;
                                 ActiveConnections.Remove(connection);
 
-                                Console.WriteLine("Kicked client ID" + clientId);
+                                Console.WriteLine("Kicked client ID " + clientId);
                             }
                             else
                             {
@@ -122,9 +121,6 @@ namespace Squirrel.Server
 
                     if (commandCount == 1)
                     {
-                        Console.WriteLine("Printing all connected clients:");
-                        Console.WriteLine("");
-
                         // Acquire mutex lock on the connection list
                         lock (ActiveConnections)
                         {
