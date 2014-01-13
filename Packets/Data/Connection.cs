@@ -8,7 +8,7 @@ namespace Squirrel.Data
         public Socket TcpSocket { get; set; }
         public Socket UdpSocket { get; set; }
 
-        public string toString()
+        public override string ToString()
         {
             string value = "Client ID: " + ClientId;
 

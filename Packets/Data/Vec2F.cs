@@ -6,9 +6,25 @@ using System.Text;
 namespace Squirrel.Data
 {
     [Serializable]
-    public struct Vec2F
+    public class Vec2F
     {
         public float x { get; set; }
         public float y { get; set; }
+
+        public Vec2F()
+        {
+            
+        }
+
+        public Vec2F(float x, float y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public override string ToString()
+        {
+            return "X: " + x + " Y: " + y;
+        }
     }
 }

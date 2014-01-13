@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Net.Sockets;
 using Squirrel.Data;
+using Squirrel.Packets;
 
 namespace Squirrel.Server
 {
@@ -8,6 +10,7 @@ namespace Squirrel.Server
     {
         private const float UPDATES_PER_SECOND = 33.0f;
         private const float UPDATES_TICK_TIME = 1000.0f / UPDATES_PER_SECOND;
+        private const int PACKET_BUFFER_SIZE = 1024;
         private const string SERVER_PREFIX = "[SERVER]: ";
 
         private readonly Stopwatch m_timer = new Stopwatch();
@@ -27,26 +30,12 @@ namespace Squirrel.Server
                 // Acquire mutex lock on the connection list
                 lock (Application.ActiveConnections)
                 {
-                    // Ping all active clients
+                    // Check for incoming messages
                     for (int i = 0; i < Application.ActiveConnections.Count; ++i)
                     {
-                        Connection conn = Application.ActiveConnections[i];
-
-                        try
-                        {
-                            // Just send an empty packet to make sure the connections are still alive
-                            conn.TcpSocket.Send(new byte[0]);
-                        }
-                        catch (Exception)
-                        {
-                            write("Client ID " + conn.ClientId + " dropped");
-
-                            conn.TcpSocket.Close();
-                            conn.UdpSocket.Close();
-                            conn.ClientId = -1;
-
-                            Application.ActiveConnections.Remove(conn);
-                        }
+                        handleIncomingMessages(Application.ActiveConnections[i]);
+                        handleOutgoingMessages(Application.ActiveConnections[i]);
+                        handleClientDisconnect(Application.ActiveConnections[i]);
                     }
                 }
 
@@ -55,6 +44,49 @@ namespace Squirrel.Server
             }
 
             write("Thread ended");
+        }
+
+        // Handle recieving incoming messages
+        public void handleIncomingMessages(Connection connection)
+        {
+            try
+            {
+                byte[] rawInput = new byte[PACKET_BUFFER_SIZE];
+                connection.TcpSocket.Receive(rawInput);
+                Packet packet = Packet.deserialize<Packet>(rawInput);
+                write("" + packet.ToString());
+            }
+            catch (Exception e)
+            {
+                write(e.ToString());
+            }
+        }
+
+        // Handle coordinating all clients
+        public void handleOutgoingMessages(Connection connection)
+        {
+            
+        }
+
+        // Handle disconnecting clients who have left
+        public void handleClientDisconnect(Connection connection)
+        {
+
+            try
+            {
+                // Just send an empty packet to make sure the connections are still alive
+                connection.TcpSocket.Send(new byte[0]);
+            }
+            catch (Exception)
+            {
+                write("Client ID " + connection.ClientId + " dropped");
+
+                connection.TcpSocket.Close();
+                connection.UdpSocket.Close();
+                connection.ClientId = -1;
+
+                Application.ActiveConnections.Remove(connection);
+            }
         }
 
         public void setRunning(bool state)

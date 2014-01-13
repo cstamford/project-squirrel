@@ -132,7 +132,7 @@ namespace Squirrel.Server
                             {
                                 foreach (Connection connection in ActiveConnections)
                                 {
-                                    Console.WriteLine("    " + connection.toString());
+                                    Console.WriteLine("    " + connection);
                                 }
                             }
                         }
@@ -148,7 +148,7 @@ namespace Squirrel.Server
 
                                 if (connection != null)
                                 {
-                                    Console.WriteLine("    " + connection.toString());
+                                    Console.WriteLine("    " + connection);
                                 }
                                 else
                                 {
