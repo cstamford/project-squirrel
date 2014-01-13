@@ -9,33 +9,35 @@ namespace Squirrel.Server
         private const string SERVER_PREFIX = "[SERVER]: ";
         private bool m_running = true;
 
-        private static readonly List<Connection> m_activeConnections = new List<Connection>();
-
         public void run()
         {
             write("Thread started");
 
             while (m_running)
             {
-                // Ping all active clients
-                for (int i = 0; i < m_activeConnections.Count; ++i)
+                // Acquire mutex lock on the connection list
+                lock (Application.ActiveConnections)
                 {
-                    Connection conn = m_activeConnections[i];
-
-                    try
+                    // Ping all active clients
+                    for (int i = 0; i < Application.ActiveConnections.Count; ++i)
                     {
-                        // Just send an empty packet to make sure the connections are still alive
-                        conn.TcpSocket.Send(new byte[0]);
-                    }
-                    catch (Exception)
-                    {
-                        write("Client ID " + conn.ClientId + " dropped");
+                        Connection conn = Application.ActiveConnections[i];
 
-                        conn.TcpSocket.Close();
-                        conn.UdpSocket.Close();
-                        conn.ClientId = -1;
+                        try
+                        {
+                            // Just send an empty packet to make sure the connections are still alive
+                            conn.TcpSocket.Send(new byte[0]);
+                        }
+                        catch (Exception)
+                        {
+                            write("Client ID " + conn.ClientId + " dropped");
 
-                        m_activeConnections.Remove(conn);
+                            conn.TcpSocket.Close();
+                            conn.UdpSocket.Close();
+                            conn.ClientId = -1;
+
+                            Application.ActiveConnections.Remove(conn);
+                        }
                     }
                 }
             }
@@ -46,11 +48,6 @@ namespace Squirrel.Server
         public void setRunning(bool state)
         {
             m_running = state;
-        }
-
-        public void addConnection(Connection newConnection)
-        {
-            m_activeConnections.Add(newConnection);
         }
 
         private void write(string input)

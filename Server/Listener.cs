@@ -8,9 +8,8 @@ namespace Squirrel.Server
     public class Listener
     {
         private const string LISTENER_PREFIX = "[LISTENER]: ";
-
-        private bool m_running = true;
         private readonly Socket m_listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private bool m_running = true;
         private readonly int m_port;
 
         public Listener(int port)
@@ -24,7 +23,7 @@ namespace Squirrel.Server
             }
             catch (Exception e)
             {
-                write("Failed to bind to UDP port " + m_port);
+                write("Failed to bind to TCP port " + m_port);
                 write(e.ToString());
             }
         }
@@ -39,24 +38,49 @@ namespace Squirrel.Server
                 {
                     Connection connection = new Connection();
 
-                    // Blocks this thread until next connection - this is fine, because this is the listenin thread
+                    // Blocks this thread until next connection - this is fine, because this is the listening thread
+                    // It's not going to be doing anything else anyway.
                     connection.TcpSocket = m_listener.Accept();
 
                     // Creates a UDP socket to go with our TCP socket
                     connection.UdpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     connection.UdpSocket.Bind(connection.TcpSocket.RemoteEndPoint);
 
-                    // The server thread will assign a client ID
-                    connection.ClientId = -1;
-
                     write("Accepted connection from " + connection.TcpSocket.RemoteEndPoint);
 
-                    // Pass the new connection to the application
-                    Application.addConnection(connection);
+                    bool assigned = false;
+                    int clientId = 1;
+
+                    // Acquire mutex lock on the connection list
+                    lock (Application.ActiveConnections)
+                    {
+                        // Iterate through existing connections to determine a new client ID
+                        for (int i = 0; i < Application.ActiveConnections.Count && !assigned; ++i, ++clientId)
+                        {
+                            if (Application.ActiveConnections[i].ClientId == clientId)
+                                continue;
+
+                            clientId = Application.ActiveConnections[i].ClientId;
+                            assigned = true;
+                        }
+
+                        if (!assigned)
+                            clientId = Application.ActiveConnections.Count + 1;
+
+                        connection.ClientId = clientId;
+
+                        // Add the connection
+                        Application.ActiveConnections.Add(connection);
+
+                        write("New connection " + connection.TcpSocket.RemoteEndPoint + " assigned client ID " +
+                              connection.ClientId);
+                    }
                 }
             }
             catch (Exception)
             {
+                // This is caught if the thread is aborted, which only happens when the application is closing.
+                write("Thread ended");
             }
 
             write("Thread ended");

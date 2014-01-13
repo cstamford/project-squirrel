@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using Squirrel.Data;
@@ -7,6 +9,7 @@ namespace Squirrel.Server
 {
     public static class Application
     {
+        public static List<Connection> ActiveConnections { get; private set; }
         private static bool m_running = true;
 
         private static Listener m_listener;
@@ -17,6 +20,8 @@ namespace Squirrel.Server
 
         private static void Main(string[] args)
         {
+            ActiveConnections = new List<Connection>();
+
             Console.Title = "Project Squirrel Server";
 
             Console.WriteLine("###########################################");
@@ -38,16 +43,13 @@ namespace Squirrel.Server
 
             while (m_running)
             {
+                Console.WriteLine("");
                 // Get user input
                 string input = Console.ReadLine();
+                Console.WriteLine("");
 
                 handleInput(input);
             }
-        }
-
-        public static void addConnection(Connection newConnection)
-        {
-            m_server.addConnection(newConnection);
         }
 
         private static void handleInput(string input)
@@ -93,7 +95,25 @@ namespace Squirrel.Server
                     }
                     else
                     {
-                        Console.WriteLine("Kicking client " + clientId);
+                        // Acquire mutex lock on the connection list
+                        lock (ActiveConnections)
+                        {
+                            Connection connection = ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
+
+                            if (connection != null)
+                            {
+                                connection.TcpSocket.Close();
+                                connection.UdpSocket.Close();
+                                connection.ClientId = -1;
+                                ActiveConnections.Remove(connection);
+
+                                Console.WriteLine("Kicked client ID" + clientId);
+                            }
+                            else
+                            {
+                                Console.WriteLine("No client found with client ID " + clientId);
+                            }
+                        }
                     }
 
                     break;
@@ -103,12 +123,42 @@ namespace Squirrel.Server
                     if (commandCount == 1)
                     {
                         Console.WriteLine("Printing all connected clients:");
+                        Console.WriteLine("");
+
+                        // Acquire mutex lock on the connection list
+                        lock (ActiveConnections)
+                        {
+                            if (ActiveConnections.Count == 0)
+                            {
+                                Console.WriteLine("    No client connected");
+                            }
+                            else
+                            {
+                                foreach (Connection connection in ActiveConnections)
+                                {
+                                    Console.WriteLine("    " + connection.toString());
+                                }
+                            }
+                        }
                     }
                     else
                     {
                         if (int.TryParse(command[1], out clientId))
                         {
-                            Console.WriteLine("Printing client " + clientId);
+                            // Acquire mutex lock on the connection list
+                            lock (ActiveConnections)
+                            {
+                                Connection connection = ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
+
+                                if (connection != null)
+                                {
+                                    Console.WriteLine("    " + connection.toString());
+                                }
+                                else
+                                {
+                                    Console.WriteLine("    No client found with client ID " + clientId);
+                                }
+                            }
                         }
                         else
                         {
