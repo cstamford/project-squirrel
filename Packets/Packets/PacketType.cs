@@ -5,7 +5,7 @@ namespace Squirrel.Packets
     [Serializable]
     public enum PacketType
     {
-        CLIENT_ID_DESIGNATION_PACKET,
+        NEW_CLIENT_PACKET,
         CHAT_PACKET,
         GAME_PACKET
     }

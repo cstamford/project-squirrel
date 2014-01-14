@@ -88,7 +88,7 @@ namespace Squirrel.Server
 
                         // Send the client his new ID
                         connection.TcpSocket.Send(
-                            Packet.bundle(new Packet(PacketType.CLIENT_ID_DESIGNATION_PACKET, clientId)));
+                            Packet.bundle(new NewClientPacket(clientId)));
 
                         // Add the connection
                         Application.ActiveConnections.Add(connection);

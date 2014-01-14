@@ -125,7 +125,7 @@ namespace Squirrel.Server
                     packet = Packet.unbundle(packet.Buffer);
                     write("Received TCP " + packet.ToString());
                 }
-                catch (Exception e)
+                catch
                 {
                     write("Failed to unbundle packet");
                 }

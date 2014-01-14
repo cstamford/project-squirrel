@@ -73,7 +73,7 @@ namespace ClientCommandline
             packet = Packet.unbundle(packet.Buffer);
 
             // Get the designated client ID bundled inside the ID designation packet
-            if (packet.PacketType == PacketType.CLIENT_ID_DESIGNATION_PACKET)
+            if (packet.PacketType == PacketType.NEW_CLIENT_PACKET)
             {
                 m_clientId = packet.ClientId;
                 Console.WriteLine("Received " + packet + ", client ID set");
@@ -82,21 +82,25 @@ namespace ClientCommandline
             // Let's connect to UDP now
             m_udpSocket.Connect(m_endPoint);
 
-            while (true)
+            while (m_running)
             {
                 try
                 {
-                    m_udpSocket.Send(Packet.bundle(new ChatPacket(m_clientId, "Jim",
-                        "HELLO I AM ON THE MOON")));
-
-                    Thread.Sleep(1000);
+                    m_tcpSocket.Send(new byte[0]);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine(ex);
+                    Console.WriteLine("We have been disconnected, shutting down");
+                    Thread.Sleep(2500);
+                    m_running = false;
+                    break;
                 }
+
+                m_udpSocket.Send(Packet.bundle(new ChatPacket(m_clientId, "Jim",
+                    "HELLO I AM ON THE MOON")));
+
+                Thread.Sleep(1000);
             }
         }
-
     }
 }
