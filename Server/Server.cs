@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
@@ -15,6 +16,9 @@ namespace Squirrel.Server
 
         private readonly Stopwatch m_timer = new Stopwatch();
 
+        private readonly List<Packet> m_tcpPacketQueue = new List<Packet>();
+        private readonly List<Packet> m_udpPacketQueue = new List<Packet>(); 
+
         private bool m_running = true;
 
         public void run()
@@ -28,81 +32,151 @@ namespace Squirrel.Server
                 // Acquire mutex lock on the connection list
                 lock (Application.ActiveConnections)
                 {
-                    for (int i = 0; i < Application.ActiveConnections.Count; ++i)
+                    // Handle incoming messages. This should not be throttled, unlike outgoing and heartbeat messages.
+                    handleIncomingMessages();
+                    
+                    // Send out heartbeat to clients
+                    handleClientDisconnect();
+
+                    // Make sure we only send out network packets once every UPDATES_TICK_TIME
+                    if (m_timer.ElapsedMilliseconds < Globals.UPDATES_TICK_TIME)
+                        continue;
+
+                    // Handle outgoing messages
+                    handleOutgoingMessages();
+
+                    lock (m_tcpPacketQueue)
                     {
-                        // Handle incoming messages. This should not be throttled, unlike outgoing and heartbeat messages.
-                        handleIncomingMessages(Application.ActiveConnections.ElementAtOrDefault(i));
-
-                        // Make sure we only send out network packets once every UPDATES_TICK_TIME
-                        if (m_timer.ElapsedMilliseconds < Globals.UPDATES_TICK_TIME)
-                            continue;
-
-                        // Handle outgoing messages
-                        handleOutgoingMessages(Application.ActiveConnections.ElementAtOrDefault(i));
-
-                        // Send out heartbeat to clients
-                        handleClientDisconnect(Application.ActiveConnections.ElementAtOrDefault(i));
-
-                        // Restart the timer
-                        m_timer.Restart();
+                        m_tcpPacketQueue.Clear();
                     }
+
+                    lock (m_udpPacketQueue)
+                    {
+                        m_udpPacketQueue.Clear();
+                    }
+
+                    m_timer.Restart();
                 }
             }
 
             write("Thread ended");
         }
 
-        // Handle recieving incoming messages
-        private void handleIncomingMessages(Connection connection)
+        public void clientDisconnected(int clientId)
         {
-            if (!Application.connectionValid(connection))
-                return;
-
-            try
+            lock (m_tcpPacketQueue)
             {
-                // If the last tcp packet has been received, make another task for the next one
-                if (!connection.TcpReady)
-                {
-                    connection.TcpReady = true;
-                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.TcpSocket);
-                    connection.TcpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
-                        onReceiveTcp, bundle);
-                }
-
-                // If the last udp packet has been received, make another task for the next one
-                if (!connection.UdpReady)
-                {
-                    connection.UdpReady = true;
-                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.UdpSocket);
-                    connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
-                        onReceiveUdp, bundle);
-                }
+                m_tcpPacketQueue.Add(new ClientDisconnectPacket(clientId));
             }
-            catch (Exception e)
+        }
+
+        // Handle recieving incoming messages
+        private void handleIncomingMessages()
+        {
+            for (int i = 0; i < Application.ActiveConnections.Count; ++i)
             {
-                write(e.Message);
-                Application.closeConnection(connection);
+                Connection connection = Application.ActiveConnections.ElementAtOrDefault(i);
+
+                if (!Connection.connectionValid(connection))
+                    continue;
+
+                try
+                {
+                    // If the last tcp packet has been received, make another task for the next one
+                    if (!connection.TcpReady)
+                    {
+                        connection.TcpReady = true;
+                        ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.TcpSocket);
+                        connection.TcpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
+                            onReceiveTcp, bundle);
+                    }
+
+                    // If the last udp packet has been received, make another task for the next one
+                    if (!connection.UdpReady)
+                    {
+                        connection.UdpReady = true;
+                        ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.UdpSocket);
+                        connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
+                            onReceiveUdp, bundle);
+                    }
+                }
+                catch { }
             }
         }
 
         // Handle coordinating all clients
-        private void handleOutgoingMessages(Connection connection)
+        private void handleOutgoingMessages()
         {
-            if (!Application.connectionValid(connection))
-                return;
+            Packet[] tcpQueue;
+            Packet[] udpQueue;
 
+            lock (m_tcpPacketQueue)
+            {
+                tcpQueue = m_tcpPacketQueue.ToArray();
+            }
+
+            lock (m_udpPacketQueue)
+            {
+                udpQueue = m_udpPacketQueue.ToArray();
+            }
+
+            for (int i = 0; i < Application.ActiveConnections.Count; ++i)
+            {
+                Connection connection = Application.ActiveConnections.ElementAtOrDefault(i);
+
+                // Check if the connection is valid (not null)
+                if (!Connection.connectionValid(connection))
+                    return;
+
+                // If there is anything in the tcp queue
+                if (tcpQueue.Any())
+                    sendPacketQueue(connection.TcpSocket, tcpQueue, connection.ClientId);
+
+                // If there is anything in the udp queue
+                if (udpQueue.Any())
+                    sendPacketQueue(connection.UdpSocket, udpQueue, connection.ClientId);
+            }
+        }
+
+        // Sends packets from the provided queue to the provided socket
+        // Client ID is for information output only
+        private void sendPacketQueue(Socket socket, Packet[] queue, int clientId)
+        {
+            byte[] rawArray = Packet.bundle(queue);
+
+            try
+            {
+                // Send TCP packets in the queue
+                socket.Send(rawArray, rawArray.Count(), SocketFlags.None);
+            }
+            catch
+            {
+                // This catches exceptions when sending packets to sockets
+                // which have been closed by the client.
+                // We don't need to handle this because the heartbeat will remove
+                // the disconnected client after the timeout delay has passed.
+            }
+            finally
+            {
+                write("Sent " + queue.Count() + " " + socket.ProtocolType + " packets to Client ID " + clientId);
+            }
         }
 
         // Handle disconnecting clients who have left
-        private void handleClientDisconnect(Connection connection)
+        private void handleClientDisconnect()
         {
-            if (!Application.connectionValid(connection))
-                return;
-
-            if (Application.getTime() > connection.TcpLastReceived + Globals.PACKET_TIME_OUT)
+            for (int i = 0; i < Application.ActiveConnections.Count; ++i)
             {
-                write(connection.ToString() + " timed out");
-                Application.closeConnection(connection);
+                Connection connection = Application.ActiveConnections.ElementAtOrDefault(i);
+
+                if (!Connection.connectionValid(connection))
+                    continue;
+
+                if (Application.getTime() > connection.TcpLastReceived + Globals.PACKET_TIME_OUT)
+                {
+                    write(connection.ToString() + " timed out");
+                    Application.closeConnection(connection);
+                }
             }
         }
 

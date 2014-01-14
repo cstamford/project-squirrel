@@ -183,12 +183,14 @@ namespace Squirrel.Server
             connection.UdpSocket.Close();
             connection.UdpSocket = null;
 
-            connection.ClientId = -1;
-
             lock (ActiveConnections)
             {
                 ActiveConnections.Remove(connection);
             }
+
+            m_server.clientDisconnected(connection.ClientId);
+
+            connection.ClientId = -1;
         }
 
         public static Connection getConnection(int clientId)
@@ -197,12 +199,6 @@ namespace Squirrel.Server
             {
                 return ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
             }
-        }
-
-        public static bool connectionValid(Connection connection)
-        {
-            return connection != null && connection.ClientId != -1 && connection.TcpSocket != null &&
-                   connection.UdpSocket != null;
         }
 
         public static long getTime()

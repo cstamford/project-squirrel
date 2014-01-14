@@ -59,8 +59,8 @@ namespace Squirrel.Server
                     // Allow us to bind UDP and TCP to the same port
                     connection.UdpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-                    // Bind!
-                    connection.UdpSocket.Bind(m_endPoint);
+                    // Connect
+                    connection.UdpSocket.Connect(connection.TcpSocket.RemoteEndPoint);
 
                     write("Accepted connection from " + connection.TcpSocket.RemoteEndPoint);
 
@@ -96,9 +96,11 @@ namespace Squirrel.Server
                             (float)rng.NextDouble() * Globals.GAME_HEIGHT, 
                             (float)rng.NextDouble() * 360.0f);
 
-                        // Send the client his new ID and position
-                        connection.TcpSocket.Send(
-                            Packet.bundle(new NewClientPacket(clientId, orientation)));
+                        // Make the new client packet
+                        NewClientPacket packet = new NewClientPacket(clientId, orientation);
+
+                        // Bundle and send the packet
+                        connection.TcpSocket.Send(Packet.bundle(packet));
 
                         // Set the last recived packet times to the current system time
                         connection.TcpLastReceived = Application.getTime();
@@ -107,8 +109,7 @@ namespace Squirrel.Server
                         // Add the connection
                         Application.ActiveConnections.Add(connection);
 
-                        write("New connection " + connection.TcpSocket.RemoteEndPoint + " assigned client ID " +
-                              connection.ClientId);
+                        write("New connection " + connection.TcpSocket.RemoteEndPoint + ", sent packet " + packet.ToString());
                     }
                 }
             }

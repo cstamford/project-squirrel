@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Interface));
             this.MainLayoutGrid = new System.Windows.Forms.TableLayoutPanel();
             this.GameLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.GameWindow = new Squirrel.Client.Interface.GameWindow();

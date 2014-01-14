@@ -23,5 +23,13 @@ namespace Squirrel.Data
 
             return value;
         }
+
+        // Checks if the provided connection is valid, has a proper client ID associated with it, and its
+        // sockets have been properly initialised
+        public static bool connectionValid(Connection connection)
+        {
+            return connection != null && connection.ClientId != -1 && connection.TcpSocket != null &&
+                   connection.UdpSocket != null;
+        }
     }
 }

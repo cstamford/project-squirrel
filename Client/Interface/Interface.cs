@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
@@ -11,22 +10,41 @@ namespace Squirrel.Client.Interface
 {
     public partial class Interface : Form
     {
-        private static readonly List<Entity> m_objects = new List<Entity>();
         private Client m_client;
         private Thread m_clientThread;
+
+        private readonly Bitmap m_triangle;
 
         public Interface()
         {
             InitializeComponent();
-            GameWindow.SetDrawList(m_objects);
+
+            string assetPath =
+                Path.Combine(
+                    Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location),
+                    "assets");
+            try
+            {
+                using (
+                    Stream BitmapStream = System.IO.File.Open(Path.Combine(assetPath, "triangle.png"),
+                        System.IO.FileMode.Open))
+                {
+                    Image img = Image.FromStream(BitmapStream);
+                    m_triangle = new Bitmap(img);
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.ToString());
+            }
         }
 
         private void Interface_Load(object sender, System.EventArgs e)
         {
+            m_client = new Client(this);
+
             try
             {
-                m_client = new Client();
-
                 if (m_client.connect(IPAddress.Parse("127.0.0.1"), 37500, "Test"))
                 {
                     m_clientThread = new Thread(m_client.run);
@@ -53,26 +71,25 @@ namespace Squirrel.Client.Interface
             }
         }
 
-        public static void addEntity(Entity entity)
+        public void clientMoved(int clientId, Entity entity)
         {
-            string assetPath =
-                Path.Combine(
-                    Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location),
-                    "assets");
-            try
-            {
-                using (Stream BitmapStream = System.IO.File.Open(Path.Combine(assetPath, "triangle.png"), System.IO.FileMode.Open))
-                {
-                    Image img = Image.FromStream(BitmapStream);
-                    Bitmap bitmap = new Bitmap(img);
+        }
 
-                    entity.setAsset(bitmap);
-                    m_objects.Add(entity);
-                }
-            }
-            catch (Exception exception)
+        public void clientConnected(Entity entity)
+        {
+            lock (GameWindow.RenderList)
             {
-                MessageBox.Show(exception.ToString());
+                // All entities share the same asset right now
+                entity.Asset = m_triangle;
+                GameWindow.RenderList.Add(entity);
+            }
+        }
+
+        public void clientDisconnected(Entity entity)
+        {
+            lock (GameWindow.RenderList)
+            {
+                GameWindow.RenderList.Remove(entity);
             }
         }
     }

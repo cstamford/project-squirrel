@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Windows.Forms.VisualStyles;
 using Squirrel.Client.Objects;
 using Squirrel.Data;
 using Squirrel.Packets;
+
 
 namespace Squirrel.Client
 {
@@ -21,13 +21,15 @@ namespace Squirrel.Client
 
         private readonly Stopwatch m_timer = new Stopwatch();
         private readonly Stopwatch m_globalTimer = new Stopwatch();
+        private readonly Interface.Interface m_parentInterface;
 
         private static Connection m_connection;
         private static IPEndPoint m_endPoint;
         private bool m_connected = false;
 
-        public Client()
+        public Client(Interface.Interface parentInterface)
         {
+            m_parentInterface = parentInterface;
             ClientLocations = new Dictionary<int, Entity>();
         }
 
@@ -77,7 +79,9 @@ namespace Squirrel.Client
 
                     // Start at the position from the server
                     ClientLocations[m_connection.ClientId] = new Player(null, ncPacket.Orientation);
-                    Interface.Interface.addEntity(ClientLocations[m_connection.ClientId]);
+
+                    // Send a client connected message to the interface, so it can update
+                    m_parentInterface.clientConnected(ClientLocations[m_connection.ClientId]);
                 }
             }
             // Failed to receive or unbundle the orientation packet
@@ -129,7 +133,12 @@ namespace Squirrel.Client
             }
         }
 
-        public void onOrientationChange(Orientation newOrientation)
+        public void sendPositionUpdate(Orientation newOrientation)
+        {
+            
+        }
+
+        public void sendChatMessage(string message)
         {
             
         }

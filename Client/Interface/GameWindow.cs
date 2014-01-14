@@ -10,7 +10,7 @@ namespace Squirrel.Client.Interface
     public class GameWindow : UserControl
     {
         // The list of assets to drraw
-        private List<Entity> m_drawList = new List<Entity>();
+        public List<Entity> RenderList { get; set; }
 
         // Mouse location variables
         private readonly Vec2F m_mousePosition = new Vec2F();
@@ -27,11 +27,8 @@ namespace Squirrel.Client.Interface
                      ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.Selectable, true);
-        }
 
-        public void SetDrawList(List<Entity> drawList)
-        {
-            m_drawList = drawList;
+            RenderList = new List<Entity>();
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -42,22 +39,22 @@ namespace Squirrel.Client.Interface
             e.Graphics.SmoothingMode = SmoothingMode.None;
 
             // Lock the draw list so nobody can mess with it
-            lock (m_drawList)
+            lock (RenderList)
             {
                 // Draw each entity
-                foreach (Entity ent in m_drawList)
+                foreach (Entity ent in RenderList)
                 {
                     // Rotate around the centre of the entity
-                    e.Graphics.TranslateTransform(ent.getAsset().Width / 2.0f, ent.getAsset().Height / 2.0f);
-                    e.Graphics.RotateTransform(ent.getRotation());
-                    e.Graphics.TranslateTransform(-ent.getAsset().Width / 2.0f, -ent.getAsset().Height / 2.0f);
+                    e.Graphics.TranslateTransform(ent.Asset.Width / 2.0f, ent.Asset.Height / 2.0f);
+                    e.Graphics.RotateTransform(ent.Orientation.Rotation);
+                    e.Graphics.TranslateTransform(-ent.Asset.Width / 2.0f, -ent.Asset.Height / 2.0f);
 
                     // Translate to the actual coordinates
                     // Append this so we rotate first before translating
-                    e.Graphics.TranslateTransform(ent.getX(), ent.getY(), MatrixOrder.Append);
+                    e.Graphics.TranslateTransform(ent.Orientation.Position.x, ent.Orientation.Position.y, MatrixOrder.Append);
 
                     // Draw the image
-                    e.Graphics.DrawImage(ent.getAsset(), new Point(0, 0));
+                    e.Graphics.DrawImage(ent.Asset, new Point(0, 0));
 
                     // Reset the transformation matrix for the new entity
                     e.Graphics.ResetTransform();

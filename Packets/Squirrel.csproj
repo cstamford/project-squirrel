@@ -46,6 +46,7 @@
     <Compile Include="Data\Vec2F.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Packets\ChatPacket.cs" />
+    <Compile Include="Packets\ClientDisconnectPacket.cs" />
     <Compile Include="Packets\HeartbeatPacket.cs" />
     <Compile Include="Packets\NewClientPacket.cs" />
     <Compile Include="Packets\PacketType.cs" />
