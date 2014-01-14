@@ -28,7 +28,7 @@ namespace Squirrel.Data
 
         public override string ToString()
         {
-            return Position.ToString() + " Rotation: " + Rotation;
+            return "(" + Position.ToString() + ") Rotation: " + Rotation;
         }
     }
 }

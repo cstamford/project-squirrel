@@ -7,14 +7,12 @@ namespace Squirrel.Packets
     public class GamePacket : Packet
     {
         public Orientation Orientation { get; set; }
-        public Vec2F Vector { get; set; }
         public Vec2F Velocity { get; set; }
 
         public GamePacket()
             : base(PacketType.POSITION_PACKET, -1)
         {
             Orientation = new Orientation();
-            Vector = new Vec2F();
             Velocity = new Vec2F();
         }
 
@@ -22,7 +20,6 @@ namespace Squirrel.Packets
             : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = orientation;
-            Vector = vector;
             Velocity = velocity;
         }
 
@@ -30,14 +27,12 @@ namespace Squirrel.Packets
             : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = new Orientation(x, y, rotation);
-            Vector = new Vec2F(vecx, vecy);
             Velocity = new Vec2F(velx, vely);
         }
 
         public override string ToString()
         {
-            return base.ToString() + " Orientation: " + Orientation.ToString() + " Vector: (" +
-                   Vector.ToString() + ") Velocity: " + Velocity.ToString();
+            return base.ToString() + " Orientation: " + Orientation.ToString() + " Velocity: " + Velocity.ToString();
         }
     }
 }
