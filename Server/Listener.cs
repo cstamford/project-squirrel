@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -98,6 +99,10 @@ namespace Squirrel.Server
                         // Send the client his new ID and position
                         connection.TcpSocket.Send(
                             Packet.bundle(new NewClientPacket(clientId, orientation)));
+
+                        // Set the last recived packet times to the current system time
+                        connection.TcpLastReceived = Application.getTime();
+                        connection.UdpLastReceived = Application.getTime();
 
                         // Add the connection
                         Application.ActiveConnections.Add(connection);

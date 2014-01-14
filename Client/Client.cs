@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -13,7 +14,13 @@ namespace Squirrel.Client
     public class Client
     {
         public int ClientId { get; set; }
+        public string Name { get; set; }
         public static Dictionary<int, Entity> ClientLocations { get; set; }
+
+        private long m_lastHeartbeat;
+
+        private readonly Stopwatch m_timer = new Stopwatch();
+        private readonly Stopwatch m_globalTimer = new Stopwatch();
 
         private static Connection m_connection;
         private static IPEndPoint m_endPoint;
@@ -24,10 +31,13 @@ namespace Squirrel.Client
             ClientLocations = new Dictionary<int, Entity>();
         }
 
-        public bool connect(IPAddress ip, int port)
+        public bool connect(IPAddress ip, int port, string name)
         {
             if (m_connected)
                 return false;
+
+            // Set the client's name (for chat)
+            Name = name;
 
             // Set initial client ID to error value
             ClientId = -1;
@@ -67,6 +77,7 @@ namespace Squirrel.Client
 
                     // Start at the position from the server
                     ClientLocations[m_connection.ClientId] = new Player(null, ncPacket.Orientation);
+                    Interface.Interface.addEntity(ClientLocations[m_connection.ClientId]);
                 }
             }
             // Failed to receive or unbundle the orientation packet
@@ -91,8 +102,8 @@ namespace Squirrel.Client
             // Allow us to bind UDP and TCP to the same port
             m_connection.UdpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            // Bind!
-            m_connection.UdpSocket.Bind(m_endPoint);
+            // Connect!
+            m_connection.UdpSocket.Connect(m_endPoint);
 
             m_connected = true;
 
@@ -101,9 +112,20 @@ namespace Squirrel.Client
 
         public void run()
         {
+            m_timer.Start();
+            m_globalTimer.Start();
+
             while (m_connected)
             {
-                
+                if (m_globalTimer.ElapsedMilliseconds <= m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY)
+                    continue;
+
+                lock (m_connection)
+                {
+                    byte[] packet = Packet.bundle(new HeartbeatPacket(ClientId));
+                    m_connection.TcpSocket.Send(packet);
+                    m_lastHeartbeat = m_globalTimer.ElapsedMilliseconds;
+                }
             }
         }
 
@@ -114,16 +136,21 @@ namespace Squirrel.Client
 
         public void closeConnection()
         {
-            if (m_connection.TcpSocket != null)
+            lock (m_connection)
             {
-                m_connection.TcpSocket.Close();
-                m_connection.TcpSocket = null;
-            }
+                if (m_connection.TcpSocket != null)
+                {
+                    m_connection.TcpSocket.Close();
+                    m_connection.TcpSocket = null;
+                }
 
-            if (m_connection.UdpSocket != null)
-            {
-                m_connection.UdpSocket.Close();
-                m_connection.UdpSocket = null;
+                if (m_connection.UdpSocket != null)
+                {
+                    m_connection.UdpSocket.Close();
+                    m_connection.UdpSocket = null;
+                }
+
+                m_connected = false;
             }
         }
 

@@ -14,13 +14,12 @@ namespace Squirrel.Server
         private const string SERVER_PREFIX = "[SERVER]: ";
 
         private readonly Stopwatch m_timer = new Stopwatch();
-        private readonly Stopwatch m_globalTimer = new Stopwatch();
+
         private bool m_running = true;
 
         public void run()
         {
             m_timer.Start();
-            m_globalTimer.Start();
 
             write("Thread started");
 
@@ -43,11 +42,11 @@ namespace Squirrel.Server
 
                         // Send out heartbeat to clients
                         handleClientDisconnect(Application.ActiveConnections.ElementAtOrDefault(i));
+
+                        // Restart the timer
+                        m_timer.Restart();
                     }
                 }
-
-                // Restart the timer
-                m_timer.Restart();
             }
 
             write("Thread ended");
@@ -100,7 +99,7 @@ namespace Squirrel.Server
             if (!Application.connectionValid(connection))
                 return;
 
-            if (m_globalTimer.ElapsedMilliseconds > connection.TcpLastReceived + Globals.PACKET_TIME_OUT)
+            if (Application.getTime() > connection.TcpLastReceived + Globals.PACKET_TIME_OUT)
             {
                 write(connection.ToString() + " timed out");
                 Application.closeConnection(connection);
@@ -131,6 +130,8 @@ namespace Squirrel.Server
                     {
                         write("<" + i + "> Received TCP " + packets[i].ToString());
                     }
+
+                    bundle.Connection.TcpLastReceived = Application.getTime();
                 }
                 catch
                 {
@@ -165,6 +166,8 @@ namespace Squirrel.Server
                     {
                         write("<" + i + "> Received UDP " + packets[i].ToString());
                     }
+
+                    bundle.Connection.UdpLastReceived = Application.getTime();
                 }
                 catch
                 {

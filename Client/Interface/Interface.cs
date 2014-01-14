@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Threading;
 using System.Windows.Forms;
 using Squirrel.Client.Objects;
 
@@ -10,8 +11,9 @@ namespace Squirrel.Client.Interface
 {
     public partial class Interface : Form
     {
-        private readonly List<Entity> m_objects = new List<Entity>();
+        private static readonly List<Entity> m_objects = new List<Entity>();
         private Client m_client;
+        private Thread m_clientThread;
 
         public Interface()
         {
@@ -20,6 +22,38 @@ namespace Squirrel.Client.Interface
         }
 
         private void Interface_Load(object sender, System.EventArgs e)
+        {
+            try
+            {
+                m_client = new Client();
+
+                if (m_client.connect(IPAddress.Parse("127.0.0.1"), 37500, "Test"))
+                {
+                    m_clientThread = new Thread(m_client.run);
+                    m_clientThread.Start();
+                }
+                else
+                {
+                    MessageBox.Show("Failed to connect");
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.ToString());
+            }
+        }
+
+        private void Interface_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            m_client.closeConnection();
+
+            if (m_clientThread != null)
+            {
+                m_clientThread.Join();
+            }
+        }
+
+        public static void addEntity(Entity entity)
         {
             string assetPath =
                 Path.Combine(
@@ -32,18 +66,9 @@ namespace Squirrel.Client.Interface
                     Image img = Image.FromStream(BitmapStream);
                     Bitmap bitmap = new Bitmap(img);
 
-                    m_objects.Add(new Entity(bitmap, 150.0f, 0.0f, 45.0f));
+                    entity.setAsset(bitmap);
+                    m_objects.Add(entity);
                 }
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show(exception.ToString());
-            }
-
-            try
-            {
-                m_client = new Client();
-                MessageBox.Show(m_client.connect(IPAddress.Parse("127.0.0.1"), 37500) ? "Connected" : "Failed to connect");
             }
             catch (Exception exception)
             {

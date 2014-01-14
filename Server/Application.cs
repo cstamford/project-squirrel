@@ -12,6 +12,7 @@ namespace Squirrel.Server
     {
         public static List<Connection> ActiveConnections { get; private set; }
         public static Dictionary<int, Orientation> ClientLocations { get; set; }
+        private static readonly Stopwatch m_globalTimer = new Stopwatch();
         private static bool m_running = true;
 
         private static Listener m_listener;
@@ -22,6 +23,7 @@ namespace Squirrel.Server
 
         private static void Main(string[] args)
         {
+            m_globalTimer.Start();
             ActiveConnections = new List<Connection>();
 
             Console.Title = "Project Squirrel Server";
@@ -201,6 +203,11 @@ namespace Squirrel.Server
         {
             return connection != null && connection.ClientId != -1 && connection.TcpSocket != null &&
                    connection.UdpSocket != null;
+        }
+
+        public static long getTime()
+        {
+            return m_globalTimer.ElapsedMilliseconds;
         }
     }
 }

@@ -5,7 +5,8 @@
         public const int GAME_WIDTH = 800;
         public const int GAME_HEIGHT = 600;
 
-        public const int PACKET_BUFFER_SIZE = 2048;
+        public const int PACKET_BUFFER_SIZE = 1024;
+        public const int PACKET_HEARTBEAT_FREQUENCY = 1000;
         public const int PACKET_TIME_OUT = 5000;
 
         public const float UPDATES_PER_SECOND = 50.0f;

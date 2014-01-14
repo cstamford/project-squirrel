@@ -207,6 +207,7 @@
             this.Name = "Interface";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Project Raccoon Client";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Interface_FormClosing);
             this.Load += new System.EventHandler(this.Interface_Load);
             this.MainLayoutGrid.ResumeLayout(false);
             this.GameLayoutPanel.ResumeLayout(false);
