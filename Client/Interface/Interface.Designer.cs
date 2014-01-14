@@ -31,7 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Interface));
             this.MainLayoutGrid = new System.Windows.Forms.TableLayoutPanel();
             this.GameLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
+            this.GameWindow = new Squirrel.Client.Interface.GameWindow(this);
             this.ChatLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.ChatBarLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.SendChatButton = new System.Windows.Forms.Button();

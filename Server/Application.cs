@@ -47,9 +47,19 @@ namespace Squirrel.Server
 
             lock (ActiveConnections)
             {
+                // Remove the client from the connection list
                 if (ActiveConnections.Contains(connection))
                 {
                     ActiveConnections.Remove(connection);
+                }
+            }
+
+            lock (ClientLocations)
+            {
+                // Remove the client from the location map
+                if (ClientLocations.ContainsKey(connection.ClientId))
+                {
+                    ClientLocations.Remove(connection.ClientId);
                 }
             }
 
@@ -70,7 +80,7 @@ namespace Squirrel.Server
         {
             ActiveConnections = new List<Connection>();
             ClientLocations = new Dictionary<int, Orientation>();
-            LogLevel = LogVerbosity.LOG_VERBOSE;
+            LogLevel = LogVerbosity.LOG_DEBUG;
 
             Console.Title = "Project Squirrel Server";
 

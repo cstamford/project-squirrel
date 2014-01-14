@@ -11,9 +11,9 @@ namespace Squirrel.Client.Interface
 {
     public partial class Interface : Form
     {
-        public Bitmap Triangle { get; private set; }
         private Client m_client;
         private Thread m_clientThread;
+        private readonly Bitmap m_triangle;
         private readonly Stopwatch m_globalTimer = new Stopwatch();
 
         public Interface()
@@ -30,7 +30,7 @@ namespace Squirrel.Client.Interface
                         System.IO.FileMode.Open))
                 {
                     Image img = Image.FromStream(BitmapStream);
-                    Triangle = new Bitmap(img);
+                    m_triangle = new Bitmap(img);
                 }
             }
             catch (Exception exception)
@@ -83,20 +83,30 @@ namespace Squirrel.Client.Interface
 
         public void clientConnected(Entity entity)
         {
-            lock (GameWindow.RenderList)
+            // Run on the UI thread
+            Invoke((MethodInvoker)delegate
             {
-                // All entities share the same asset right now
-                entity.Asset = Triangle;
-                GameWindow.RenderList.Add(entity);
-            }
+                lock (GameWindow.RenderList)
+                {
+                    // All entities share the same asset right now
+                    entity.Asset = m_triangle;
+                    GameWindow.RenderList.Add(entity);
+                    GameWindow.Invalidate();
+                }
+            });
         }
 
         public void clientDisconnected(Entity entity)
         {
-            lock (GameWindow.RenderList)
+            // Run on the UI thread
+            Invoke((MethodInvoker)delegate
             {
-                GameWindow.RenderList.Remove(entity);
-            }
+                lock (GameWindow.RenderList)
+                {
+                    GameWindow.RenderList.Remove(entity);
+                    GameWindow.Invalidate();
+                }
+            });
         }
     }
 }

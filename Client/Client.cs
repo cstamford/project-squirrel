@@ -123,6 +123,8 @@ namespace Squirrel.Client
 
             while (m_connected)
             {
+                handleIncomingMessages();
+
                 if (m_parentInterface.getTime() <= m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY)
                     continue;
 
@@ -182,7 +184,21 @@ namespace Squirrel.Client
                 }
                 else
                 {
-                    ClientLocations[clientId] = new Entity(m_parentInterface.Triangle, orientation);
+                    ClientLocations[clientId] = new Entity(null, orientation);
+                    m_parentInterface.clientConnected(ClientLocations[clientId]);
+                }
+            }
+        }
+
+        private void removeClient(int clientId)
+        {
+            lock (ClientLocations)
+            {
+                // If this client exists
+                if (ClientLocations.ContainsKey(clientId))
+                {
+                    m_parentInterface.clientDisconnected(ClientLocations[clientId]);
+                    ClientLocations.Remove(clientId);
                 }
             }
         }
@@ -282,6 +298,13 @@ namespace Squirrel.Client
 
                         PositionPacket positionPacket = (PositionPacket)packet;
                         updateClientPosition(positionPacket.ClientId, positionPacket.Orientation);
+                        break;
+
+                    case PacketType.CLIENT_DISCONNECT_PACKET:
+
+                        ClientDisconnectPacket discoPacket = (ClientDisconnectPacket)packet;
+                        removeClient(discoPacket.ClientId);
+
                         break;
                 }
             }

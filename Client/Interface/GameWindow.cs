@@ -9,6 +9,9 @@ namespace Squirrel.Client.Interface
 {
     public class GameWindow : UserControl
     {
+        // Parent
+        private readonly Interface m_parentInterface;
+
         // The list of assets to drraw
         public List<Entity> RenderList { get; set; }
 
@@ -20,8 +23,10 @@ namespace Squirrel.Client.Interface
         private bool m_mouseMiddlePressed;
         private bool m_mouseRightPressed;
 
-        public GameWindow()
+        public GameWindow(Interface parent)
         {
+            m_parentInterface = parent;
+
             // Set up double buffering and make this control selectable
             SetStyle(ControlStyles.UserPaint |
                      ControlStyles.AllPaintingInWmPaint |
@@ -33,6 +38,7 @@ namespace Squirrel.Client.Interface
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            e.Graphics.Clear(SystemColors.ControlDark);
             e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             e.Graphics.CompositingQuality = CompositingQuality.HighSpeed;
