@@ -61,6 +61,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Client.cs" />
+    <Compile Include="Interface\ConnectDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\ConnectDialog.Designer.cs">
+      <DependentUpon>ConnectDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\GameWindow.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Interface\Interface.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -68,6 +77,8 @@
       <DependentUpon>Interface.cs</DependentUpon>
     </Compile>
     <Compile Include="Application.cs" />
+    <Compile Include="Objects\Entity.cs" />
+    <Compile Include="Objects\Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Interface\Interface.resx">
       <DependentUpon>Interface.cs</DependentUpon>
@@ -116,6 +127,12 @@
       <ProductName>Windows Installer 4.5</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Packets\Squirrel.csproj">
+      <Project>{5b89b1e3-0fe5-42e7-8009-1841e1388ca1}</Project>
+      <Name>Squirrel</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

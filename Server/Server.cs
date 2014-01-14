@@ -14,11 +14,14 @@ namespace Squirrel.Server
         private const string SERVER_PREFIX = "[SERVER]: ";
 
         private readonly Stopwatch m_timer = new Stopwatch();
+        private readonly Stopwatch m_globalTimer = new Stopwatch();
         private bool m_running = true;
 
         public void run()
         {
             m_timer.Start();
+            m_globalTimer.Start();
+
             write("Thread started");
 
             while (m_running)
@@ -56,22 +59,30 @@ namespace Squirrel.Server
             if (!Application.connectionValid(connection))
                 return;
 
-            // If the last tcp packet has been received, make another task for the next one
-            if (!connection.TcpReady)
+            try
             {
-                connection.TcpReady = true;
-                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.TcpSocket);
-                connection.TcpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
-                    onReceiveTcp, bundle);
-            }
+                // If the last tcp packet has been received, make another task for the next one
+                if (!connection.TcpReady)
+                {
+                    connection.TcpReady = true;
+                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.TcpSocket);
+                    connection.TcpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
+                        onReceiveTcp, bundle);
+                }
 
-            // If the last udp packet has been received, make another task for the next one
-            if (!connection.UdpReady)
+                // If the last udp packet has been received, make another task for the next one
+                if (!connection.UdpReady)
+                {
+                    connection.UdpReady = true;
+                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.UdpSocket);
+                    connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
+                        onReceiveUdp, bundle);
+                }
+            }
+            catch (Exception e)
             {
-                connection.UdpReady = true;
-                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.UdpSocket);
-                connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
-                    onReceiveUdp, bundle);
+                write(e.Message);
+                Application.closeConnection(connection);
             }
         }
 
@@ -89,13 +100,9 @@ namespace Squirrel.Server
             if (!Application.connectionValid(connection))
                 return;
 
-            try
+            if (m_globalTimer.ElapsedMilliseconds > connection.TcpLastReceived + Globals.PACKET_TIME_OUT)
             {
-                // Just send an empty packet to make sure the connections are still alive
-                connection.TcpSocket.Send(new byte[0]);
-            }
-            catch (Exception)
-            {
+                write(connection.ToString() + " timed out");
                 Application.closeConnection(connection);
             }
         }

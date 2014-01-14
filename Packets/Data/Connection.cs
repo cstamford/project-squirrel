@@ -8,9 +8,11 @@ namespace Squirrel.Data
 
         public Socket TcpSocket { get; set; }
         public bool TcpReady { get; set; }
+        public long TcpLastReceived { get; set; }
 
         public Socket UdpSocket { get; set; }
         public bool UdpReady { get; set; }
+        public long UdpLastReceived { get; set; }
 
         public override string ToString()
         {
