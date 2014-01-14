@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
@@ -10,10 +11,10 @@ namespace Squirrel.Client.Interface
 {
     public partial class Interface : Form
     {
+        public Bitmap Triangle { get; private set; }
         private Client m_client;
         private Thread m_clientThread;
-
-        private readonly Bitmap m_triangle;
+        private readonly Stopwatch m_globalTimer = new Stopwatch();
 
         public Interface()
         {
@@ -25,12 +26,11 @@ namespace Squirrel.Client.Interface
                     "assets");
             try
             {
-                using (
-                    Stream BitmapStream = System.IO.File.Open(Path.Combine(assetPath, "triangle.png"),
+                using (Stream BitmapStream = System.IO.File.Open(Path.Combine(assetPath, "triangle.png"),
                         System.IO.FileMode.Open))
                 {
                     Image img = Image.FromStream(BitmapStream);
-                    m_triangle = new Bitmap(img);
+                    Triangle = new Bitmap(img);
                 }
             }
             catch (Exception exception)
@@ -39,8 +39,14 @@ namespace Squirrel.Client.Interface
             }
         }
 
+        public long getTime()
+        {
+            return m_globalTimer.ElapsedMilliseconds;
+        }
+
         private void Interface_Load(object sender, System.EventArgs e)
         {
+            m_globalTimer.Start();
             m_client = new Client(this);
 
             try
@@ -80,7 +86,7 @@ namespace Squirrel.Client.Interface
             lock (GameWindow.RenderList)
             {
                 // All entities share the same asset right now
-                entity.Asset = m_triangle;
+                entity.Asset = Triangle;
                 GameWindow.RenderList.Add(entity);
             }
         }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -12,6 +11,8 @@ namespace Squirrel.Server
     {
         public static List<Connection> ActiveConnections { get; private set; }
         public static Dictionary<int, Orientation> ClientLocations { get; set; }
+        public static LogVerbosity LogLevel { get; set; }
+
         private static readonly Stopwatch m_globalTimer = new Stopwatch();
         private static bool m_running = true;
 
@@ -46,7 +47,10 @@ namespace Squirrel.Server
 
             lock (ActiveConnections)
             {
-                ActiveConnections.Remove(connection);
+                if (ActiveConnections.Contains(connection))
+                {
+                    ActiveConnections.Remove(connection);
+                }
             }
 
             m_server.clientDisconnected(connection.ClientId);
@@ -66,6 +70,7 @@ namespace Squirrel.Server
         {
             ActiveConnections = new List<Connection>();
             ClientLocations = new Dictionary<int, Orientation>();
+            LogLevel = LogVerbosity.LOG_VERBOSE;
 
             Console.Title = "Project Squirrel Server";
 
@@ -75,6 +80,8 @@ namespace Squirrel.Server
             Console.WriteLine("#                Server                   #");
             Console.WriteLine("#                                         #");
             Console.WriteLine("###########################################");
+            Console.WriteLine();
+            Console.WriteLine("LOG VERBOSITY: " + LogLevel);
             Console.WriteLine();
 
             m_globalTimer.Start();
@@ -87,6 +94,9 @@ namespace Squirrel.Server
             m_server = new Server();
             m_serverThread = new Thread(m_server.run);
             m_serverThread.Start();
+
+            // Give the threads 500 ms to start up
+            Thread.Sleep(500);
 
             while (m_running)
             {

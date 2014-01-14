@@ -69,7 +69,9 @@ namespace Squirrel.Server
         {
             lock (m_tcpPacketQueue)
             {
-                m_tcpPacketQueue.Add(new ClientDisconnectPacket(clientId));
+                ClientDisconnectPacket packet = new ClientDisconnectPacket(clientId);
+                m_tcpPacketQueue.Add(packet);
+                //write();
             }
         }
 
@@ -102,8 +104,6 @@ namespace Squirrel.Server
                     // If the last udp packet has been received, make another task for the next one
                     if (!connection.UdpReady)
                     {
-                        EndPoint endpoint = connection.TcpSocket.RemoteEndPoint;
-
                         connection.UdpReady = true;
                         ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.UdpSocket);
                         connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(),
@@ -112,12 +112,12 @@ namespace Squirrel.Server
                 }
                 catch (SocketException exception)
                 {
-                    write(exception.Message);
+                    write(exception);
                     Application.closeConnection(connection);
                 }
                 catch (Exception exception)
                 {
-                    write(exception.Message);
+                    write(exception);
                 }
             }
         }
@@ -148,31 +148,40 @@ namespace Squirrel.Server
 
                 // If there is anything in the tcp queue
                 if (tcpQueue.Any())
-                    sendPacketQueue(connection.TcpSocket, tcpQueue, connection.RemoteEndPoint);
+                    sendPacketQueue(connection.TcpSocket, tcpQueue, connection.ClientId, connection.RemoteEndPoint);
 
                 // If there is anything in the udp queue
                 if (udpQueue.Any())
-                    sendPacketQueue(connection.UdpSocket, udpQueue, connection.RemoteEndPoint);
+                    sendPacketQueue(connection.UdpSocket, udpQueue, connection.ClientId, connection.RemoteEndPoint);
             }
         }
 
         // Sends packets from the provided queue to the provided socket
         // Client ID is for information output only
-        private void sendPacketQueue(Socket socket, Packet[] queue, EndPoint endPoint)
+        private void sendPacketQueue(Socket socket, Packet[] queue, int clientId, EndPoint endPoint)
         {
-            byte[] rawArray = Packet.bundle(queue);
+            lock (queue)
+            {
+                // Don't send packets to a client with his own location
+                foreach (Packet packet in queue.Where(packet => packet.ClientId != clientId))
+                {
+                    byte[] rawArray = Packet.bundle(packet);
 
-            try
-            {
-                // Send
-                socket.SendTo(rawArray, endPoint);
-            }
-            catch
-            {
-                // This catches exceptions when sending packets to sockets
-                // which have been closed by the client.
-                // We don't need to handle this because the heartbeat will remove
-                // the disconnected client after the timeout delay has passed.
+                    try
+                    {
+                        // Send the packets!
+                        socket.SendTo(rawArray, endPoint);
+                        write("Sent " + socket.ProtocolType + " packet " + packet.PacketType + 
+                            " concerning Client ID " + packet.ClientId + " to Client ID " + clientId, LogVerbosity.LOG_DEBUG);
+                    }
+                    catch
+                    {
+                        // This catches exceptions when sending packets to sockets
+                        // which have been closed by the client.
+                        // We don't need to handle this because the heartbeat will remove
+                        // the disconnected client after the timeout delay has passed.
+                    }
+                }
             }
         }
 
@@ -188,7 +197,7 @@ namespace Squirrel.Server
 
                 if (Application.getTime() > connection.TcpLastReceived + Globals.PACKET_TIME_OUT)
                 {
-                    write(connection.ToString() + " timed out");
+                    write(connection.ToString() + " timed out", LogVerbosity.LOG_VERBOSE);
                     Application.closeConnection(connection);
                 }
             }
@@ -221,7 +230,7 @@ namespace Squirrel.Server
             if (bytesReceived <= 0) 
                 return;
 
-            Packet[] packets = Packet.unbundle(bundle.RawBytes);
+            Packet[] packets;
 
             try
             {
@@ -229,7 +238,7 @@ namespace Squirrel.Server
 
                 for (int i = 0; i < packets.Count(); ++i)
                 {
-                    write("<" + i + "> Received " + socket.ProtocolType + " " + packets[i].ToString());
+                    write("<" + i + "> Received " + socket.ProtocolType + " " + packets[i].ToString(), LogVerbosity.LOG_DEBUG);
                 }
 
                 if (socket.ProtocolType == ProtocolType.Tcp)
@@ -239,7 +248,7 @@ namespace Squirrel.Server
             }
             catch
             {
-                write("Failed to unbundle packet");
+                write("Failed to unbundle packet", LogVerbosity.LOG_VERBOSE);
                 return;
             }
 
@@ -289,9 +298,27 @@ namespace Squirrel.Server
             }
         }
 
-        private void write(string input)
+        private static void write(string input, LogVerbosity verbosity = LogVerbosity.LOG_NORMAL)
         {
-            Console.WriteLine(SERVER_PREFIX + input);
+            if (verbosity <= Application.LogLevel)
+                Console.WriteLine(SERVER_PREFIX + input);
+        }
+
+        private static void write(Exception exception, LogVerbosity verbosity = LogVerbosity.LOG_NORMAL)
+        {
+            // If the verbosity is lower than the provided verbosity, leave
+            if (Application.LogLevel < verbosity)
+                return;
+
+            // Otherwise, display exception details based on the verbosity
+            if (Application.LogLevel >= LogVerbosity.LOG_DEBUG)
+            {
+                Console.WriteLine(SERVER_PREFIX + exception);
+            }
+            else if (Application.LogLevel >= LogVerbosity.LOG_VERBOSE)
+            {
+                Console.WriteLine(SERVER_PREFIX + exception.Message);
+            }
         }
     }
 }

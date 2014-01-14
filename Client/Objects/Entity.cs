@@ -7,23 +7,27 @@ namespace Squirrel.Client.Objects
     {
         public Bitmap Asset { get; set; }
         public Orientation Orientation { get; set; }
+        public Orientation RemoteOrientation { get; set; }
 
         public Entity(Bitmap asset)
         {
             Asset = asset;
             Orientation = new Orientation(0.0f, 0.0f, 0.0f);
+            RemoteOrientation = new Orientation(0.0f, 0.0f, 0.0f);
         }
 
         public Entity(Bitmap asset, Orientation orientation)
         {
             Asset = asset;
             Orientation = orientation;
+            RemoteOrientation = new Orientation(Orientation.Position.x, Orientation.Position.y, orientation.Rotation);
         }
 
         public Entity(Bitmap asset, float x, float y, float rotation)
         {
             Asset = asset;
             Orientation = new Orientation(x, y, rotation);
+            RemoteOrientation = new Orientation(x, y, rotation);
         }
 
         // Move the entity by delta x and delta y

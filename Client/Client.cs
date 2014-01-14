@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
@@ -20,7 +21,6 @@ namespace Squirrel.Client
         private long m_lastHeartbeat;
 
         private readonly Stopwatch m_timer = new Stopwatch();
-        private readonly Stopwatch m_globalTimer = new Stopwatch();
         private readonly Interface.Interface m_parentInterface;
 
         private static Connection m_connection;
@@ -58,6 +58,9 @@ namespace Squirrel.Client
 
             // Block here - UI thread will terminate this thread it takes too long
             m_connection.TcpSocket.Connect(m_endPoint);
+
+            // Set the remote endpoint to the TCP socket's target (the server
+            m_connection.RemoteEndPoint = m_connection.TcpSocket.RemoteEndPoint;
 
             byte[] rawBuffer = new byte[Globals.PACKET_BUFFER_SIZE];
 
@@ -106,8 +109,8 @@ namespace Squirrel.Client
             // Allow us to bind UDP and TCP to the same port
             m_connection.UdpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            // Connect!
-            m_connection.UdpSocket.Connect(m_endPoint);
+            // Bind to the local endpoint
+            m_connection.UdpSocket.Bind(m_connection.TcpSocket.LocalEndPoint);
 
             m_connected = true;
 
@@ -117,19 +120,17 @@ namespace Squirrel.Client
         public void run()
         {
             m_timer.Start();
-            m_globalTimer.Start();
 
             while (m_connected)
             {
-                if (m_globalTimer.ElapsedMilliseconds <= m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY)
+                if (m_parentInterface.getTime() <= m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY)
                     continue;
 
                 lock (m_connection)
                 {
                     byte[] packet = Packet.bundle(new HeartbeatPacket(ClientId));
                     m_connection.TcpSocket.Send(packet);
-                    m_connection.UdpSocket.Send(packet);
-                    m_lastHeartbeat = m_globalTimer.ElapsedMilliseconds;
+                    m_lastHeartbeat = m_parentInterface.getTime();
                 }
             }
         }
@@ -167,6 +168,124 @@ namespace Squirrel.Client
         public bool isConnected()
         {
             return m_connected;
+        }
+
+        private void updateClientPosition(int clientId, Orientation orientation)
+        {
+            lock (ClientLocations)
+            {
+                // If the client is already here
+                if (ClientLocations.ContainsKey(clientId))
+                {
+                    // Just update the remote orientation
+                    ClientLocations[clientId].RemoteOrientation = orientation;
+                }
+                else
+                {
+                    ClientLocations[clientId] = new Entity(m_parentInterface.Triangle, orientation);
+                }
+            }
+        }
+
+        // Handle recieving incoming messages
+        private void handleIncomingMessages()
+        {
+            if (!Connection.connectionValid(m_connection))
+                return;
+
+            try
+            {
+                // If the last tcp packet has been received, make another task for the next one
+                if (!m_connection.TcpReady)
+                {
+                    m_connection.TcpReady = true;
+                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(m_connection, m_connection.TcpSocket);
+                    m_connection.TcpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
+                        handleReceivePackets, bundle);
+                }
+
+                // If the last udp packet has been received, make another task for the next one
+                if (!m_connection.UdpReady)
+                {
+                    m_connection.UdpReady = true;
+                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(m_connection, m_connection.UdpSocket);
+                    m_connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(),
+                        SocketFlags.None, handleReceivePackets, bundle);
+                }
+            }
+            catch (SocketException exception)
+            {
+                closeConnection();
+            }
+            catch (Exception exception)
+            {
+            }
+        }
+
+
+        private void handleReceivePackets(IAsyncResult ar)
+        {
+            ConnectionPacketBundle bundle = (ConnectionPacketBundle)ar.AsyncState;
+            Socket socket = bundle.Socket;
+
+            if (socket.ProtocolType == ProtocolType.Tcp)
+                bundle.Connection.TcpReady = false;
+            else if (socket.ProtocolType == ProtocolType.Udp)
+                bundle.Connection.UdpReady = false;
+
+            int bytesReceived = 0;
+
+            try
+            {
+                bytesReceived = socket.EndReceive(ar);
+            }
+            catch
+            {
+                // This exception doesn't need to be handled - it's just complaining
+                // about disposed sockets due to a client disconnect / kick
+            }
+
+            // If we haven't received a proper packet, leave
+            if (bytesReceived <= 0)
+                return;
+
+            Packet[] packets;
+
+            try
+            {
+                packets = Packet.unbundle(bundle.RawBytes);
+
+                if (socket.ProtocolType == ProtocolType.Tcp)
+                    bundle.Connection.TcpLastReceived = m_parentInterface.getTime();
+                else if (socket.ProtocolType == ProtocolType.Udp)
+                    bundle.Connection.UdpLastReceived = m_parentInterface.getTime();
+            }
+            catch
+            {
+                // Failed to unbundle packet. Discard and return..
+                return;
+            }
+
+            // Packets is now safe to read from, as any exception thrown during
+            // unbundling will cause the execution to leave
+            foreach (Packet packet in packets)
+            {
+                switch (packet.PacketType)
+                {
+                    case PacketType.CHAT_PACKET:
+
+                        ChatPacket chatPacket = (ChatPacket)packet;
+
+                        break;
+
+                    case PacketType.POSITION_PACKET:
+
+                        PositionPacket positionPacket = (PositionPacket)packet;
+                        updateClientPosition(positionPacket.ClientId, positionPacket.Orientation);
+                        break;
+                }
+            }
+
         }
     }
 }

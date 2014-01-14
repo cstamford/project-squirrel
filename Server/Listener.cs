@@ -65,7 +65,7 @@ namespace Squirrel.Server
                     // Bind
                     connection.UdpSocket.Bind(m_endPoint);
 
-                    write("Accepted connection from " + connection.TcpSocket.RemoteEndPoint);
+                    write("Accepted connection from " + connection.RemoteEndPoint);
 
                     bool assigned = false;
                     int clientId = 1;
@@ -115,7 +115,7 @@ namespace Squirrel.Server
                         // Add the connection
                         Application.ActiveConnections.Add(connection);
 
-                        write("New connection " + connection.TcpSocket.RemoteEndPoint + ", sent packet " + packet.ToString());
+                        write("Sent " + packet.ToString() + " to new client " + connection.RemoteEndPoint, LogVerbosity.LOG_VERBOSE);
                     }
                 }
             }
@@ -136,9 +136,10 @@ namespace Squirrel.Server
                 m_listener.Close();
         }
 
-        private static void write(string input)
+        private static void write(string input, LogVerbosity verbosity = LogVerbosity.LOG_NORMAL)
         {
-            Console.WriteLine(LISTENER_PREFIX + input);
+            if (verbosity <= Application.LogLevel)
+                Console.WriteLine(LISTENER_PREFIX + input);
         }
     }
 }

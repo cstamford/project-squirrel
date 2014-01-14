@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="Listener.cs" />
     <Compile Include="Application.cs" />
+    <Compile Include="LogVerbosity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
   </ItemGroup>
