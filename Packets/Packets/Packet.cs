@@ -14,6 +14,8 @@ namespace Squirrel.Packets
 
         public Packet()
         {
+            PacketType = PacketType.EMPTY_PACKET;
+            ClientId = -1;
         }
 
         public Packet(PacketType packetType, int clientId)

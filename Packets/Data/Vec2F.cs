@@ -13,7 +13,8 @@ namespace Squirrel.Data
 
         public Vec2F()
         {
-            
+            x = 0.0f;
+            y = 0.0f;
         }
 
         public Vec2F(float x, float y)

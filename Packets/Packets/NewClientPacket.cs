@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Remoting.Messaging;
 using Squirrel.Data;
 
 namespace Squirrel.Packets
@@ -9,8 +10,9 @@ namespace Squirrel.Packets
         public Orientation Orientation { get; set; }
 
         public NewClientPacket()
+            : base(PacketType.NEW_CLIENT_PACKET, -1)
         {
-            PacketType = PacketType.NEW_CLIENT_PACKET;
+            Orientation = new Orientation();
         }
 
         public NewClientPacket(int clientId, Orientation orientation) 

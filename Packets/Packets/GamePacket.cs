@@ -7,27 +7,30 @@ namespace Squirrel.Packets
     public class GamePacket : Packet
     {
         public Orientation Orientation { get; set; }
-        public Orientation LastOrientation { get; set; }
+        public Vec2F Vector { get; set; }
         public Vec2F Velocity { get; set; }
 
         public GamePacket()
             : base(PacketType.POSITION_PACKET, -1)
         {
+            Orientation = new Orientation();
+            Vector = new Vec2F();
+            Velocity = new Vec2F();
         }
 
-        public GamePacket(int clientId, Orientation orientation, Orientation lastOrientation, Vec2F velocity)
+        public GamePacket(int clientId, Orientation orientation, Vec2F vector, Vec2F velocity)
             : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = orientation;
-            LastOrientation = lastOrientation;
+            Vector = vector;
             Velocity = velocity;
         }
 
-        public GamePacket(int clientId, float x, float y, float rotation, float lx, float ly, float lrotation, float velx, float vely)
+        public GamePacket(int clientId, float x, float y, float rotation, float vecx, float vecy, float velx, float vely)
             : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = new Orientation(x, y, rotation);
-            LastOrientation = new Orientation(lx, ly, lrotation);
+            Vector = new Vec2F(vecx, vecy);
             Velocity = new Vec2F(velx, vely);
         }
 

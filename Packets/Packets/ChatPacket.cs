@@ -11,6 +11,8 @@ namespace Squirrel.Packets
         public ChatPacket()
             : base(PacketType.CHAT_PACKET, -1)
         {
+            Name = "undefined";
+            Message = "undefined";
         }
 
         public ChatPacket(int clientId, string name, string message)

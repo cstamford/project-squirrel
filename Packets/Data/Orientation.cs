@@ -8,7 +8,11 @@ namespace Squirrel.Data
         public Vec2F Position { get; set; }
         public float Rotation { get; set; }
 
-        public Orientation() { }
+        public Orientation()
+        {
+            Position = new Vec2F();
+            Rotation = 0.0f;
+        }
 
         public Orientation(Vec2F position, float rotation)
         {
