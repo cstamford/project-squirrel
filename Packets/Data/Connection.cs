@@ -5,8 +5,12 @@ namespace Squirrel.Data
     public class Connection
     {
         public int ClientId { get; set; }
+
         public Socket TcpSocket { get; set; }
+        public bool TcpReady { get; set; }
+
         public Socket UdpSocket { get; set; }
+        public bool UdpReady { get; set; }
 
         public override string ToString()
         {

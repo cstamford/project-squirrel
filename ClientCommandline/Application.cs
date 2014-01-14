@@ -13,16 +13,20 @@ namespace ClientCommandline
 {
     public class Application
     {
-        private const int m_port = 37500;
-        private static readonly IPAddress m_ip = IPAddress.Parse("127.0.0.1");
-
         private static bool m_running = true;
-        private static readonly Socket m_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static readonly Socket m_tcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static readonly Socket m_udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        private static IPEndPoint m_endPoint;
+        private static readonly IPAddress m_ip = IPAddress.Parse("94.174.148.248");
+        private const int m_port = 37500;
 
         private static int m_clientId = -1;
 
+
         private static void Main(string[] args)
         {
+            m_endPoint = new IPEndPoint(m_ip, m_port);
+
             Console.Title = "Project Squirrel Client";
 
             Console.WriteLine("###########################################");
@@ -43,10 +47,10 @@ namespace ClientCommandline
         private static void beginTcpConnection()
         {
             SocketAsyncEventArgs connEvent = new SocketAsyncEventArgs();
-            connEvent.RemoteEndPoint = new IPEndPoint(m_ip, m_port);
+            connEvent.RemoteEndPoint = m_endPoint;
             connEvent.Completed += onConnect;
             Console.WriteLine("Starting connection attempt to " + connEvent.RemoteEndPoint);
-            m_socket.ConnectAsync(connEvent);
+            m_tcpSocket.ConnectAsync(connEvent);
         }
 
         private static void onConnect(object sender, SocketAsyncEventArgs e)
@@ -61,15 +65,37 @@ namespace ClientCommandline
                 return;
             }
 
-            Socket socket = e.ConnectSocket;
+            Packet packet = new Packet();
 
-            socket.Send(Packet.serialize(new ChatPacket(m_clientId,
-                "HELLO I AM ON THE MOON")));
+            // Now we need to block until we get the ID designation packet
+            m_tcpSocket.Receive(packet.Buffer, packet.Buffer.Count(), SocketFlags.None);
 
-            Thread.Sleep(500);
+            packet = Packet.unbundle(packet.Buffer);
 
-            socket.Send(Packet.serialize(new GamePacket(
-                m_clientId, 1.0f, 1.0f, 45.0f, 1.0f, 2.0f, 45.0f, 0.0f, -1.0f)));
+            // Get the designated client ID bundled inside the ID designation packet
+            if (packet.PacketType == PacketType.CLIENT_ID_DESIGNATION_PACKET)
+            {
+                m_clientId = packet.ClientId;
+                Console.WriteLine("Received " + packet + ", client ID set");
+            }
+
+            // Let's connect to UDP now
+            m_udpSocket.Connect(m_endPoint);
+
+            while (true)
+            {
+                try
+                {
+                    m_udpSocket.Send(Packet.bundle(new ChatPacket(m_clientId, "Jim",
+                        "HELLO I AM ON THE MOON")));
+
+                    Thread.Sleep(1000);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+            }
         }
 
     }

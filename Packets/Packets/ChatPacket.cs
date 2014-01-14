@@ -5,6 +5,7 @@ namespace Squirrel.Packets
     [Serializable]
     public class ChatPacket : Packet
     {
+        public string Name { get; set; }
         public string Message { get; set; }
 
         public ChatPacket()
@@ -12,15 +13,16 @@ namespace Squirrel.Packets
         {
         }
 
-        public ChatPacket(int clientId, string message)
+        public ChatPacket(int clientId, string name, string message)
             : base(PacketType.CHAT_PACKET, clientId)
         {
+            Name = name;
             Message = message;
         }
 
         public override string ToString()
         {
-            return base.ToString() + " Message: " + Message;
+            return base.ToString() + " Name: " + Name + " Message: " + Message;
         }
     }
 }

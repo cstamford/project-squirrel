@@ -3,12 +3,14 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using Squirrel.Data;
+using Squirrel.Packets;
 
 namespace Squirrel.Server
 {
     public class Listener
     {
         private const string LISTENER_PREFIX = "[LISTENER]: ";
+        private readonly IPEndPoint m_endPoint;
         private readonly Socket m_listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private bool m_running = true;
         private readonly int m_port;
@@ -16,10 +18,17 @@ namespace Squirrel.Server
         public Listener(int port)
         {
             m_port = port;
+            m_endPoint = new IPEndPoint(IPAddress.Any, m_port);
 
             try
             {
-                m_listener.Bind(new IPEndPoint(IPAddress.Any, m_port));
+                // Allow us to bind UDP and TCP to the same port
+                m_listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+                // Bind the listener to the endpoint
+                m_listener.Bind(m_endPoint);
+
+                // Listen on the endpoint
                 m_listener.Listen(m_port);
             }
             catch (Exception e)
@@ -45,7 +54,12 @@ namespace Squirrel.Server
 
                     // Creates a UDP socket to go with our TCP socket
                     connection.UdpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                    connection.UdpSocket.Bind(connection.TcpSocket.RemoteEndPoint);
+
+                    // Allow us to bind UDP and TCP to the same port
+                    connection.UdpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+                    // Bind!
+                    connection.UdpSocket.Bind(m_endPoint);
 
                     write("Accepted connection from " + connection.TcpSocket.RemoteEndPoint);
 
@@ -69,7 +83,12 @@ namespace Squirrel.Server
                         if (!assigned)
                             clientId = Application.ActiveConnections.Count + 1;
 
+                        // Allocate the client his ID
                         connection.ClientId = clientId;
+
+                        // Send the client his new ID
+                        connection.TcpSocket.Send(
+                            Packet.bundle(new Packet(PacketType.CLIENT_ID_DESIGNATION_PACKET, clientId)));
 
                         // Add the connection
                         Application.ActiveConnections.Add(connection);
@@ -79,10 +98,10 @@ namespace Squirrel.Server
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // This is caught if the thread is aborted, which only happens when the application is closing.
-                write("Thread ended");
+                write(e.ToString());
             }
 
             write("Thread ended");

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Squirrel.Packets
@@ -7,13 +8,21 @@ namespace Squirrel.Packets
     [Serializable]
     public class Packet
     {
+        private const int PACKET_BUFFER_SIZE = 1024;
+
+        [NonSerialized] public byte[] Buffer;
+        [NonSerialized] public Socket Socket;
         public PacketType PacketType { get; set; }
         public int ClientId { get; set; }
 
-        public Packet() {  }
+        public Packet()
+        {
+            Buffer = new byte[PACKET_BUFFER_SIZE];
+        }
 
         public Packet(PacketType packetType, int clientId)
         {
+            Buffer = new byte[PACKET_BUFFER_SIZE];
             PacketType = packetType;
             ClientId = clientId;
         }
@@ -23,7 +32,7 @@ namespace Squirrel.Packets
             return "Packet: " + PacketType + " Client ID: " + ClientId;
         }
 
-        public static byte[] serialize<T>(T packet)
+        public static byte[] bundle(Packet packet)
         {
             BinaryFormatter formatter = new BinaryFormatter();
 
@@ -35,23 +44,13 @@ namespace Squirrel.Packets
             }
         }
 
-        public static T deserialize<T>(byte[] raw)
+        public static Packet unbundle(byte[] raw)
         {
             BinaryFormatter formatter = new BinaryFormatter();
 
             using (MemoryStream stream = new MemoryStream(raw))
             {
-                return (T)formatter.Deserialize(stream);
-            }
-        }
-
-        public static PacketType getPacketType(byte[] raw)
-        {
-            BinaryFormatter formatter = new BinaryFormatter();
-
-            using (MemoryStream stream = new MemoryStream(raw))
-            {
-                return ((Packet) formatter.Deserialize(stream)).PacketType;
+                return (Packet)formatter.Deserialize(stream);
             }
         }
     }

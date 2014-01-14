@@ -94,24 +94,15 @@ namespace Squirrel.Server
                     }
                     else
                     {
-                        // Acquire mutex lock on the connection list
-                        lock (ActiveConnections)
+                        Connection connection = getConnection(clientId);
+
+                        if (connection != null)
                         {
-                            Connection connection = ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
-
-                            if (connection != null)
-                            {
-                                connection.TcpSocket.Close();
-                                connection.UdpSocket.Close();
-                                connection.ClientId = -1;
-                                ActiveConnections.Remove(connection);
-
-                                Console.WriteLine("Kicked client ID " + clientId);
-                            }
-                            else
-                            {
-                                Console.WriteLine("No client found with client ID " + clientId);
-                            }
+                            closeConnection(connection);
+                        }
+                        else
+                        {
+                            Console.WriteLine("No client found with client ID " + clientId);
                         }
                     }
 
@@ -121,14 +112,14 @@ namespace Squirrel.Server
 
                     if (commandCount == 1)
                     {
-                        // Acquire mutex lock on the connection list
-                        lock (ActiveConnections)
+                        if (ActiveConnections.Count == 0)
                         {
-                            if (ActiveConnections.Count == 0)
-                            {
-                                Console.WriteLine("    No client connected");
-                            }
-                            else
+                            Console.WriteLine("    No client connected");
+                        }
+                        else
+                        {
+                            // Acquire mutex lock on the connection list
+                            lock (ActiveConnections)
                             {
                                 foreach (Connection connection in ActiveConnections)
                                 {
@@ -142,18 +133,15 @@ namespace Squirrel.Server
                         if (int.TryParse(command[1], out clientId))
                         {
                             // Acquire mutex lock on the connection list
-                            lock (ActiveConnections)
-                            {
-                                Connection connection = ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
+                            Connection connection = getConnection(clientId);
 
-                                if (connection != null)
-                                {
-                                    Console.WriteLine("    " + connection);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("    No client found with client ID " + clientId);
-                                }
+                            if (connection != null)
+                            {
+                                Console.WriteLine("    " + connection);
+                            }
+                            else
+                            {
+                                Console.WriteLine("    No client found with client ID " + clientId);
                             }
                         }
                         else
@@ -179,6 +167,38 @@ namespace Squirrel.Server
 
                     break;
             }
+        }
+
+        public static void closeConnection(Connection connection)
+        {
+            Console.WriteLine("Client ID " + connection.ClientId + " dropped");
+
+            connection.TcpSocket.Close();
+            connection.TcpSocket = null;
+
+            connection.UdpSocket.Close();
+            connection.UdpSocket = null;
+
+            connection.ClientId = -1;
+
+            lock (ActiveConnections)
+            {
+                ActiveConnections.Remove(connection);
+            }
+        }
+
+        public static Connection getConnection(int clientId)
+        {
+            lock (ActiveConnections)
+            {
+                return ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
+            }
+        }
+
+        public static bool connectionValid(Connection connection)
+        {
+            return connection != null && connection.ClientId != -1 && connection.TcpSocket != null &&
+                   connection.UdpSocket != null;
         }
     }
 }

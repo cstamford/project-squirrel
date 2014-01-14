@@ -41,8 +41,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Connection.cs" />
+    <Compile Include="Data\ConnectionPacketBundle.cs" />
     <Compile Include="Data\Orientation.cs" />
     <Compile Include="Data\Vec2F.cs" />
+    <Compile Include="Globals.cs" />
     <Compile Include="Packets\ChatPacket.cs" />
     <Compile Include="Packets\PacketType.cs" />
     <Compile Include="Packets\GamePacket.cs" />

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using Squirrel.Data;
 
 namespace Squirrel.Packets
@@ -14,7 +13,6 @@ namespace Squirrel.Packets
         public GamePacket()
             : base(PacketType.GAME_PACKET, -1)
         {
-            
         }
 
         public GamePacket(int clientId, Orientation orientation, Orientation lastOrientation, Vec2F velocity)
