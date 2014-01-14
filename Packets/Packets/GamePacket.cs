@@ -36,8 +36,8 @@ namespace Squirrel.Packets
 
         public override string ToString()
         {
-            return base.ToString() + " Orientation: " + Orientation.ToString() + " Last Orientation: " +
-                   LastOrientation.ToString() + " Velocity: " + Velocity.ToString();
+            return base.ToString() + " Orientation: " + Orientation.ToString() + " Vector: (" +
+                   Vector.ToString() + ") Velocity: " + Velocity.ToString();
         }
     }
 }
