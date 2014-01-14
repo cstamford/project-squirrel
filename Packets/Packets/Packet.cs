@@ -8,21 +8,16 @@ namespace Squirrel.Packets
     [Serializable]
     public class Packet
     {
-        private const int PACKET_BUFFER_SIZE = 1024;
-
-        [NonSerialized] public byte[] Buffer;
         [NonSerialized] public Socket Socket;
         public PacketType PacketType { get; set; }
         public int ClientId { get; set; }
 
         public Packet()
         {
-            Buffer = new byte[PACKET_BUFFER_SIZE];
         }
 
         public Packet(PacketType packetType, int clientId)
         {
-            Buffer = new byte[PACKET_BUFFER_SIZE];
             PacketType = packetType;
             ClientId = clientId;
         }
@@ -34,23 +29,31 @@ namespace Squirrel.Packets
 
         public static byte[] bundle(Packet packet)
         {
+            Packet[] packetArray = new Packet[1];
+            packetArray[0] = packet;
+
+            return bundle(packetArray);
+        }
+
+        public static byte[] bundle(Packet[] packets)
+        {
             BinaryFormatter formatter = new BinaryFormatter();
 
             using (MemoryStream stream = new MemoryStream())
             {
-                formatter.Serialize(stream, packet);
+                formatter.Serialize(stream, packets);
                 stream.Seek(0, SeekOrigin.Begin);
                 return stream.ToArray();
             }
         }
 
-        public static Packet unbundle(byte[] raw)
+        public static Packet[] unbundle(byte[] raw)
         {
             BinaryFormatter formatter = new BinaryFormatter();
 
             using (MemoryStream stream = new MemoryStream(raw))
             {
-                return (Packet)formatter.Deserialize(stream);
+                return (Packet[])formatter.Deserialize(stream);
             }
         }
     }

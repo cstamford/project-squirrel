@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Squirrel.Data;
 using Squirrel.Packets;
@@ -10,8 +11,6 @@ namespace Squirrel.Server
 {
     public class Server
     {
-        private const float UPDATES_PER_SECOND = 33.0f;
-        private const float UPDATES_TICK_TIME = 1000.0f / UPDATES_PER_SECOND;
         private const string SERVER_PREFIX = "[SERVER]: ";
 
         private readonly Stopwatch m_timer = new Stopwatch();
@@ -33,7 +32,7 @@ namespace Squirrel.Server
                         handleIncomingMessages(Application.ActiveConnections.ElementAtOrDefault(i));
 
                         // Make sure we only send out network packets once every UPDATES_TICK_TIME
-                        if (m_timer.ElapsedMilliseconds < UPDATES_TICK_TIME)
+                        if (m_timer.ElapsedMilliseconds < Globals.UPDATES_TICK_TIME)
                             continue;
 
                         // Handle outgoing messages
@@ -61,9 +60,8 @@ namespace Squirrel.Server
             if (!connection.TcpReady)
             {
                 connection.TcpReady = true;
-                Packet tcpPacket = new Packet {Socket = connection.TcpSocket};
-                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, tcpPacket);
-                connection.TcpSocket.BeginReceive(tcpPacket.Buffer, 0, tcpPacket.Buffer.Count(), SocketFlags.None,
+                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.TcpSocket);
+                connection.TcpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
                     onReceiveTcp, bundle);
             }
 
@@ -71,9 +69,8 @@ namespace Squirrel.Server
             if (!connection.UdpReady)
             {
                 connection.UdpReady = true;
-                Packet udpPacket = new Packet {Socket = connection.UdpSocket};
-                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, udpPacket);
-                connection.UdpSocket.BeginReceive(udpPacket.Buffer, 0, udpPacket.Buffer.Count(), SocketFlags.None,
+                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.UdpSocket);
+                connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
                     onReceiveUdp, bundle);
             }
         }
@@ -106,8 +103,7 @@ namespace Squirrel.Server
         private void onReceiveTcp(IAsyncResult ar)
         {
             ConnectionPacketBundle bundle = (ConnectionPacketBundle)ar.AsyncState;
-            Packet packet = bundle.Packet;
-            Socket socket = packet.Socket;
+            Socket socket = bundle.Socket;
             int bytesReceived = 0;
 
             try
@@ -122,8 +118,12 @@ namespace Squirrel.Server
             {
                 try
                 {
-                    packet = Packet.unbundle(packet.Buffer);
-                    write("Received TCP " + packet.ToString());
+                    Packet[] packets = Packet.unbundle(bundle.RawBytes);
+
+                    for (int i = 0; i < packets.Count(); ++i)
+                    {
+                        write("<" + i + "> Received TCP " + packets[i].ToString());
+                    }
                 }
                 catch
                 {
@@ -137,8 +137,7 @@ namespace Squirrel.Server
         private void onReceiveUdp(IAsyncResult ar)
         {
             ConnectionPacketBundle bundle = (ConnectionPacketBundle)ar.AsyncState;
-            Packet packet = bundle.Packet;
-            Socket socket = packet.Socket;
+            Socket socket = bundle.Socket;
             int bytesReceived = 0;
 
             try
@@ -153,10 +152,14 @@ namespace Squirrel.Server
             {
                 try
                 {
-                    packet = Packet.unbundle(packet.Buffer);
-                    write("Received UDP " + packet.ToString());
+                    Packet[] packets = Packet.unbundle(bundle.RawBytes);
+
+                    for (int i = 0; i < packets.Count(); ++i)
+                    {
+                        write("<" + i + "> Received UDP " + packets[i].ToString());
+                    }
                 }
-                catch (Exception)
+                catch
                 {
                     write("Failed to unbundle packet");
                 }

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Squirrel;
 using Squirrel.Data;
 using Squirrel.Packets;
 
@@ -14,6 +16,7 @@ namespace ClientCommandline
     public class Application
     {
         private static bool m_running = true;
+        private static readonly Stopwatch m_timer = new Stopwatch();
         private static readonly Socket m_tcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private static readonly Socket m_udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         private static IPEndPoint m_endPoint;
@@ -65,41 +68,77 @@ namespace ClientCommandline
                 return;
             }
 
-            Packet packet = new Packet();
+            byte[] rawArray = new byte[Globals.PACKET_BUFFER_SIZE];
 
             // Now we need to block until we get the ID designation packet
-            m_tcpSocket.Receive(packet.Buffer, packet.Buffer.Count(), SocketFlags.None);
+            m_tcpSocket.Receive(rawArray, rawArray.Count(), SocketFlags.None);
 
-            packet = Packet.unbundle(packet.Buffer);
+            Packet[] packets = Packet.unbundle(rawArray);
 
-            // Get the designated client ID bundled inside the ID designation packet
-            if (packet.PacketType == PacketType.NEW_CLIENT_PACKET)
+            foreach (Packet packet in packets)
             {
-                m_clientId = packet.ClientId;
-                Console.WriteLine("Received " + packet + ", client ID set");
+                // Get the designated client ID bundled inside the ID designation packet
+                if (packet.PacketType == PacketType.NEW_CLIENT_PACKET)
+                {
+                    m_clientId = packet.ClientId;
+                    Console.WriteLine("Received " + packet + ", client ID set");
+                }
             }
 
             // Let's connect to UDP now
             m_udpSocket.Connect(m_endPoint);
 
+            m_timer.Start();
+
             while (m_running)
             {
-                try
+                if (m_timer.ElapsedMilliseconds > Globals.UPDATES_TICK_TIME)
                 {
-                    m_tcpSocket.Send(new byte[0]);
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("We have been disconnected, shutting down");
-                    Thread.Sleep(2500);
-                    m_running = false;
-                    break;
-                }
+                    m_tcpSocket.Send(Packet.bundle(new Packet[]
+                    {
+                        new ChatPacket(m_clientId, "Jim",
+                            "HELLO I AM ON THE MOON"),
+                    }));
 
-                m_udpSocket.Send(Packet.bundle(new ChatPacket(m_clientId, "Jim",
-                    "HELLO I AM ON THE MOON")));
+                    m_udpSocket.Send(Packet.bundle(new Packet[]
+                    {
+                        new GamePacket(m_clientId,
+                            new Orientation(1.0f, 1.0f, 1.0f),
+                            new Orientation(2.0f, 2.0f, 2.0f),
+                            new Vec2F(1.0f, 1.0f)), 
+                        new GamePacket(m_clientId,
+                            new Orientation(1.0f, 1.0f, 1.0f),
+                            new Orientation(2.0f, 2.0f, 2.0f),
+                            new Vec2F(1.0f, 1.0f)), 
+                        new GamePacket(m_clientId,
+                            new Orientation(1.0f, 1.0f, 1.0f),
+                            new Orientation(2.0f, 2.0f, 2.0f),
+                            new Vec2F(1.0f, 1.0f)), 
+                        new GamePacket(m_clientId,
+                            new Orientation(1.0f, 1.0f, 1.0f),
+                            new Orientation(2.0f, 2.0f, 2.0f),
+                            new Vec2F(1.0f, 1.0f)), 
+                        new GamePacket(m_clientId,
+                            new Orientation(1.0f, 1.0f, 1.0f),
+                            new Orientation(2.0f, 2.0f, 2.0f),
+                            new Vec2F(1.0f, 1.0f)), 
 
-                Thread.Sleep(1000);
+                    }));
+
+                    try
+                    {
+                        m_tcpSocket.Send(new byte[0]);
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("We have been disconnected, shutting down");
+                        Thread.Sleep(2500);
+                        m_running = false;
+                        break;
+                    }
+
+                    m_timer.Restart();
+                }
             }
         }
     }

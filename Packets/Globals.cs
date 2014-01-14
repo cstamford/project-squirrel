@@ -2,7 +2,8 @@
 {
     public static class Globals
     {
-        public const int TCP_PORT = 37500;
-        public const int UDP_PORT = 37501;
+        public const int PACKET_BUFFER_SIZE = 2048;
+        public const float UPDATES_PER_SECOND = 50.0f;
+        public const float UPDATES_TICK_TIME = 1000.0f / UPDATES_PER_SECOND;
     }
 }
