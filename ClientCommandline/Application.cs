@@ -18,13 +18,14 @@ namespace ClientCommandline
     public class Application
     {
         private const int m_port = 37500;
+        private static int m_clientId = -1;
         private static IPAddress m_ip;
-        private static Socket m_tcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private static Socket m_udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        private static readonly Socket m_tcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static readonly Socket m_udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-        private static Thread m_heartbeat = new Thread(sendHeartbeat);
-        private static Thread m_receiveUdpThread = new Thread(receiveUdp);
-        private static Thread m_receiveTcpThread = new Thread(receiveTcp);
+        private static readonly Thread m_heartbeat = new Thread(sendHeartbeat);
+        private static readonly Thread m_receiveUdpThread = new Thread(receiveUdp);
+        private static readonly Thread m_receiveTcpThread = new Thread(receiveTcp);
 
         private static void Main(string[] args)
         {
@@ -43,6 +44,28 @@ namespace ClientCommandline
             m_tcpSocket.Connect(new IPEndPoint(m_ip, m_port));
             m_udpSocket.Bind(m_tcpSocket.LocalEndPoint);
 
+            byte[] rawBuffer = new byte[Globals.PACKET_BUFFER_SIZE];
+
+            try
+            {
+                // Now that we've got a TCP connection, receive client ID and orientation from the server
+                m_tcpSocket.Receive(rawBuffer, rawBuffer.Count(), SocketFlags.None);
+
+                // Unbundle the packets received
+                Packet[] packetsReceived = Packet.unbundle(rawBuffer);
+
+                // Select the orientation packet from the bundle
+                foreach (NewClientPacket ncPacket in packetsReceived.Where(packet => packet.PacketType == PacketType.NEW_CLIENT_PACKET).Cast<NewClientPacket>())
+                {
+                    m_clientId = ncPacket.ClientId;
+                    m_udpSocket.SendTo(Packet.bundle(new NewClientPacket(ncPacket.ClientId, ncPacket.Orientation)), m_tcpSocket.RemoteEndPoint);
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception);
+            }
+
             m_heartbeat.Start();
             m_receiveUdpThread.Start();
             m_receiveTcpThread.Start();
@@ -58,12 +81,11 @@ namespace ClientCommandline
             {
                 try
                 {
-                    m_tcpSocket.Send(Packet.bundle(new HeartbeatPacket(1)));
-                    m_udpSocket.SendTo(Packet.bundle(new HeartbeatPacket(1)), m_tcpSocket.RemoteEndPoint);
+                    m_tcpSocket.Send(Packet.bundle(new HeartbeatPacket(m_clientId)));
                 }
                 catch (Exception exception)
                 {
-                    Console.WriteLine("Exception");
+                    Console.WriteLine("Heartbeat exception");
                     Console.WriteLine(exception);
                 }
 

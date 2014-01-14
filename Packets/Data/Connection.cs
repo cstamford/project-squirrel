@@ -15,6 +15,8 @@ namespace Squirrel.Data
         public bool UdpReady { get; set; }
         public long UdpLastReceived { get; set; }
 
+        public EndPoint RemoteEndPoint { get; set; }
+
         public override string ToString()
         {
             string value = "Client ID: " + ClientId;

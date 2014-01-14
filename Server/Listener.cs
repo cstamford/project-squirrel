@@ -53,6 +53,9 @@ namespace Squirrel.Server
                     // It's not going to be doing anything else anyway.
                     connection.TcpSocket = m_listener.Accept();
 
+                    // Set the connection's end point to the end point of the socket returned by the listener
+                    connection.RemoteEndPoint = connection.TcpSocket.RemoteEndPoint;
+
                     // Creates a UDP socket to go with our TCP socket
                     connection.UdpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -105,6 +108,9 @@ namespace Squirrel.Server
                         // Set the last recived packet times to the current system time
                         connection.TcpLastReceived = Application.getTime();
                         connection.UdpLastReceived = Application.getTime();
+
+                        // Add the location
+                        Application.updateClientLocation(connection.ClientId, orientation);
 
                         // Add the connection
                         Application.ActiveConnections.Add(connection);

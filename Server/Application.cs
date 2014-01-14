@@ -21,10 +21,51 @@ namespace Squirrel.Server
         private static Server m_server;
         private static Thread m_serverThread;
 
+        public static Connection getConnection(int clientId)
+        {
+            lock (ActiveConnections)
+            {
+                return ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
+            }
+        }
+
+        public static long getTime()
+        {
+            return m_globalTimer.ElapsedMilliseconds;
+        }
+
+        public static void closeConnection(Connection connection)
+        {
+            Console.WriteLine("Client ID " + connection.ClientId + " dropped");
+
+            connection.TcpSocket.Close();
+            connection.TcpSocket = null;
+
+            connection.UdpSocket.Close();
+            connection.UdpSocket = null;
+
+            lock (ActiveConnections)
+            {
+                ActiveConnections.Remove(connection);
+            }
+
+            m_server.clientDisconnected(connection.ClientId);
+
+            connection.ClientId = -1;
+        }
+
+        public static void updateClientLocation(int clientId, Orientation newOrientation)
+        {
+            lock (ClientLocations)
+            {
+                ClientLocations[clientId] = newOrientation;
+            }
+        }
+
         private static void Main(string[] args)
         {
-            m_globalTimer.Start();
             ActiveConnections = new List<Connection>();
+            ClientLocations = new Dictionary<int, Orientation>();
 
             Console.Title = "Project Squirrel Server";
 
@@ -35,6 +76,8 @@ namespace Squirrel.Server
             Console.WriteLine("#                                         #");
             Console.WriteLine("###########################################");
             Console.WriteLine();
+
+            m_globalTimer.Start();
 
             m_listener = new Listener(37500);
 
@@ -171,39 +214,6 @@ namespace Squirrel.Server
 
                     break;
             }
-        }
-
-        public static void closeConnection(Connection connection)
-        {
-            Console.WriteLine("Client ID " + connection.ClientId + " dropped");
-
-            connection.TcpSocket.Close();
-            connection.TcpSocket = null;
-
-            connection.UdpSocket.Close();
-            connection.UdpSocket = null;
-
-            lock (ActiveConnections)
-            {
-                ActiveConnections.Remove(connection);
-            }
-
-            m_server.clientDisconnected(connection.ClientId);
-
-            connection.ClientId = -1;
-        }
-
-        public static Connection getConnection(int clientId)
-        {
-            lock (ActiveConnections)
-            {
-                return ActiveConnections.FirstOrDefault(it => it.ClientId == clientId);
-            }
-        }
-
-        public static long getTime()
-        {
-            return m_globalTimer.ElapsedMilliseconds;
         }
     }
 }
