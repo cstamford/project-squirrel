@@ -16,14 +16,14 @@ namespace Squirrel.Packets
             Velocity = new Vec2F();
         }
 
-        public GamePacket(int clientId, Orientation orientation, Vec2F vector, Vec2F velocity)
+        public GamePacket(int clientId, Orientation orientation, Vec2F velocity)
             : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = orientation;
             Velocity = velocity;
         }
 
-        public GamePacket(int clientId, float x, float y, float rotation, float vecx, float vecy, float velx, float vely)
+        public GamePacket(int clientId, float x, float y, float rotation, float velx, float vely)
             : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = new Orientation(x, y, rotation);

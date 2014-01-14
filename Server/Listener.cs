@@ -59,8 +59,8 @@ namespace Squirrel.Server
                     // Allow us to bind UDP and TCP to the same port
                     connection.UdpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-                    // Connect
-                    connection.UdpSocket.Connect(connection.TcpSocket.RemoteEndPoint);
+                    // Bind
+                    connection.UdpSocket.Bind(m_endPoint);
 
                     write("Accepted connection from " + connection.TcpSocket.RemoteEndPoint);
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Management.Instrumentation;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -15,20 +17,18 @@ namespace ClientCommandline
 {
     public class Application
     {
-        private static bool m_running = true;
-        private static readonly Stopwatch m_timer = new Stopwatch();
-        private static readonly Socket m_tcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private static readonly Socket m_udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        private static IPEndPoint m_endPoint;
-        private static readonly IPAddress m_ip = IPAddress.Parse("94.174.148.248");
         private const int m_port = 37500;
+        private static IPAddress m_ip;
+        private static Socket m_tcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static Socket m_udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-        private static int m_clientId = -1;
-
+        private static Thread m_heartbeat = new Thread(sendHeartbeat);
+        private static Thread m_receiveUdpThread = new Thread(receiveUdp);
+        private static Thread m_receiveTcpThread = new Thread(receiveTcp);
 
         private static void Main(string[] args)
         {
-            m_endPoint = new IPEndPoint(m_ip, m_port);
+            m_ip = IPAddress.Parse("94.174.148.248");
 
             Console.Title = "Project Squirrel Client";
 
@@ -40,124 +40,72 @@ namespace ClientCommandline
             Console.WriteLine("###########################################");
             Console.WriteLine();
 
-            beginTcpConnection();
+            m_tcpSocket.Connect(new IPEndPoint(m_ip, m_port));
+            m_udpSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
 
-            while (m_running)
+            m_heartbeat.Start();
+            m_receiveUdpThread.Start();
+            m_receiveTcpThread.Start();
+
+            while (true)
             {
             }
         }
 
-        private static void beginTcpConnection()
+        private static void sendHeartbeat()
         {
-            SocketAsyncEventArgs connEvent = new SocketAsyncEventArgs();
-            connEvent.RemoteEndPoint = m_endPoint;
-            connEvent.Completed += onConnect;
-            Console.WriteLine("Starting connection attempt to " + connEvent.RemoteEndPoint);
-            m_tcpSocket.ConnectAsync(connEvent);
-        }
-
-        private static void onConnect(object sender, SocketAsyncEventArgs e)
-        {
-            if (e.ConnectSocket != null)
+            while (true)
             {
-                Console.WriteLine("Connected to " + e.RemoteEndPoint);
-            }
-            else
-            {
-                Console.WriteLine("Connection to " + e.RemoteEndPoint + " failed");
-                return;
-            }
-
-            byte[] rawArray = new byte[Globals.PACKET_BUFFER_SIZE];
-
-            // Now we need to block until we get the ID designation packet
-            m_tcpSocket.Receive(rawArray, rawArray.Count(), SocketFlags.None);
-
-            Packet[] packets = Packet.unbundle(rawArray);
-
-            foreach (Packet packet in packets)
-            {
-                // Get the designated client ID bundled inside the ID designation packet
-                if (packet.PacketType == PacketType.NEW_CLIENT_PACKET)
+                try
                 {
-                    m_clientId = packet.ClientId;
-                    Console.WriteLine("Received " + packet + ", client ID set");
+                    m_tcpSocket.Send(Packet.bundle(new HeartbeatPacket(1)));
+                    m_udpSocket.SendTo(Packet.bundle(new HeartbeatPacket(1)), m_tcpSocket.RemoteEndPoint);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine("Exception");
+                    Console.WriteLine(exception);
+                }
+
+                Thread.Sleep(Globals.PACKET_HEARTBEAT_FREQUENCY);
+            }
+        }
+
+        private static void receiveTcp()
+        {
+            while (true)
+            {
+                try
+                {
+                    byte[] rawArray = new byte[Globals.PACKET_BUFFER_SIZE];
+                    m_tcpSocket.Receive(rawArray, rawArray.Count(), SocketFlags.None);
+                    Packet[] packets = Packet.unbundle(rawArray);
+                    Console.WriteLine("[TCP]" + packets[0]);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine("Rceive TCP exception");
+                    Console.WriteLine(exception);
                 }
             }
+        }
 
-            // Let's connect to UDP now
-            m_udpSocket.Connect(m_endPoint);
-
-            m_timer.Start();
-
-            while (m_running)
+        private static void receiveUdp()
+        {
+            while (true)
             {
-                if (m_timer.ElapsedMilliseconds > Globals.UPDATES_TICK_TIME)
+                try
                 {
-                    m_tcpSocket.Send(Packet.bundle(new Packet[]
-                    {
-                        new ChatPacket(m_clientId, "Jim",
-                            "HELLO I AM ON THE MOON"),
-                    }));
-
-                    m_udpSocket.Send(Packet.bundle(new Packet[]
-                    {
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-
-                    }));
-
-                    m_udpSocket.Send(Packet.bundle(new Packet[]
-                    {
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-
-                    }));
-
-                    m_udpSocket.Send(Packet.bundle(new Packet[]
-                    {
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-
-                    }));
-
-                    m_udpSocket.Send(Packet.bundle(new Packet[]
-                    {
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-
-                    }));
-
-                    m_udpSocket.Send(Packet.bundle(new Packet[]
-                    {
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-
-                    }));
-
-                    try
-                    {
-                        m_tcpSocket.Send(new byte[0]);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine("We have been disconnected, shutting down");
-                        Thread.Sleep(2500);
-                        m_running = false;
-                        break;
-                    }
-
-                    m_timer.Restart();
+                    byte[] rawArray = new byte[Globals.PACKET_BUFFER_SIZE];
+                    EndPoint ep = m_tcpSocket.RemoteEndPoint;
+                    m_udpSocket.Receive(rawArray, rawArray.Count(), SocketFlags.None);
+                    Packet[] packets = Packet.unbundle(rawArray);
+                    Console.WriteLine("[UDP]" + packets[0]);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine("Rceive UDP exception");
+                    Console.WriteLine(exception);
                 }
             }
         }

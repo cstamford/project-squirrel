@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -88,19 +89,33 @@ namespace Squirrel.Server
                         connection.TcpReady = true;
                         ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.TcpSocket);
                         connection.TcpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
-                            onReceiveTcp, bundle);
+                            handleReceivePackets, bundle);
                     }
+                }
+                catch (Exception exception)
+                {
+                    write("TCP exception");
+                    write(exception.Message);
+                }
 
+                try
+                {
                     // If the last udp packet has been received, make another task for the next one
                     if (!connection.UdpReady)
                     {
+                        EndPoint endpoint = connection.TcpSocket.RemoteEndPoint;
+
                         connection.UdpReady = true;
                         ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, connection.UdpSocket);
-                        connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(), SocketFlags.None,
-                            onReceiveUdp, bundle);
+                        connection.UdpSocket.BeginReceive(bundle.RawBytes, 0, bundle.RawBytes.Count(),
+                            SocketFlags.None, handleReceivePackets, bundle);
                     }
                 }
-                catch { }
+                catch (Exception exception)
+                {
+                    write("UDP exception");
+                    write(exception.Message);
+                }
             }
         }
 
@@ -127,6 +142,9 @@ namespace Squirrel.Server
                 // Check if the connection is valid (not null)
                 if (!Connection.connectionValid(connection))
                     return;
+
+                //connection.TcpSocket.Send(Packet.bundle(new Packet()));
+                //connection.UdpSocket.SendTo(Packet.bundle(new Packet()), connection.TcpSocket.RemoteEndPoint);
 
                 // If there is anything in the tcp queue
                 if (tcpQueue.Any())
@@ -180,19 +198,22 @@ namespace Squirrel.Server
             }
         }
 
-        private void onReceiveTcp(IAsyncResult ar)
+        private void handleReceivePackets(IAsyncResult ar)
         {
             ConnectionPacketBundle bundle = (ConnectionPacketBundle)ar.AsyncState;
             Socket socket = bundle.Socket;
+
             int bytesReceived = 0;
 
             try
             {
                 bytesReceived = socket.EndReceive(ar);
             }
-            // This exception doesn't need to be handled - it's just complaining
-            // about disposed sockets due to a client disconnect / kick
-            catch { }
+            catch
+            {
+                // This exception doesn't need to be handled - it's just complaining
+                // about disposed sockets due to a client disconnect / kick
+            }
 
             if (bytesReceived > 0)
             {
@@ -202,46 +223,13 @@ namespace Squirrel.Server
 
                     for (int i = 0; i < packets.Count(); ++i)
                     {
-                        write("<" + i + "> Received TCP " + packets[i].ToString());
+                        write("<" + i + "> Received " + socket.ProtocolType + " " + packets[i].ToString());
                     }
 
-                    bundle.Connection.TcpLastReceived = Application.getTime();
-                }
-                catch
-                {
-                    write("Failed to unbundle packet");
-                }
-            }
-            
-            bundle.Connection.TcpReady = false;
-        }
-
-        private void onReceiveUdp(IAsyncResult ar)
-        {
-            ConnectionPacketBundle bundle = (ConnectionPacketBundle)ar.AsyncState;
-            Socket socket = bundle.Socket;
-            int bytesReceived = 0;
-
-            try
-            {
-                bytesReceived = socket.EndReceive(ar);
-            }
-            // This exception doesn't need to be handled - it's just complaining
-            // about disposed sockets due to a client disconnect / kick
-            catch { }
-
-            if (bytesReceived > 0)
-            {
-                try
-                {
-                    Packet[] packets = Packet.unbundle(bundle.RawBytes);
-
-                    for (int i = 0; i < packets.Count(); ++i)
-                    {
-                        write("<" + i + "> Received UDP " + packets[i].ToString());
-                    }
-
-                    bundle.Connection.UdpLastReceived = Application.getTime();
+                    if (socket.ProtocolType == ProtocolType.Tcp)
+                        bundle.Connection.TcpLastReceived = Application.getTime();
+                    else if (socket.ProtocolType == ProtocolType.Udp)
+                        bundle.Connection.UdpLastReceived = Application.getTime();
                 }
                 catch
                 {
@@ -249,7 +237,10 @@ namespace Squirrel.Server
                 }
             }
 
-            bundle.Connection.UdpReady = false;
+            if (socket.ProtocolType == ProtocolType.Tcp)
+                bundle.Connection.TcpReady = false;
+            else if (socket.ProtocolType == ProtocolType.Udp)
+                bundle.Connection.UdpReady = false;
         }
 
         public void setRunning(bool state)

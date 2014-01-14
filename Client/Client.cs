@@ -128,6 +128,7 @@ namespace Squirrel.Client
                 {
                     byte[] packet = Packet.bundle(new HeartbeatPacket(ClientId));
                     m_connection.TcpSocket.Send(packet);
+                    m_connection.UdpSocket.Send(packet);
                     m_lastHeartbeat = m_globalTimer.ElapsedMilliseconds;
                 }
             }
