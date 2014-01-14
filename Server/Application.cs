@@ -114,7 +114,7 @@ namespace Squirrel.Server
                     {
                         if (ActiveConnections.Count == 0)
                         {
-                            Console.WriteLine("    No client connected");
+                            Console.WriteLine("    No clients connected");
                         }
                         else
                         {

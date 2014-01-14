@@ -57,32 +57,24 @@ namespace Squirrel.Server
             if (!Application.connectionValid(connection))
                 return;
 
-            try
+            // If the last tcp packet has been received, make another task for the next one
+            if (!connection.TcpReady)
             {
-                // If the last tcp packet has been received, make another task for the next one
-                if (!connection.TcpReady)
-                {
-                    connection.TcpReady = true;
-                    Packet tcpPacket = new Packet {Socket = connection.TcpSocket};
-                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, tcpPacket);
-                    connection.TcpSocket.BeginReceive(tcpPacket.Buffer, 0, tcpPacket.Buffer.Count(), SocketFlags.None,
-                        onReceiveTcp, bundle);
-                }
-
-                // If the last udp packet has been received, make another task for the next one
-                if (!connection.UdpReady)
-                {
-                    connection.UdpReady = true;
-                    Packet udpPacket = new Packet {Socket = connection.UdpSocket};
-                    ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, udpPacket);
-                    connection.UdpSocket.BeginReceive(udpPacket.Buffer, 0, udpPacket.Buffer.Count(), SocketFlags.None,
-                        onReceiveUdp, bundle);
-                }
+                connection.TcpReady = true;
+                Packet tcpPacket = new Packet {Socket = connection.TcpSocket};
+                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, tcpPacket);
+                connection.TcpSocket.BeginReceive(tcpPacket.Buffer, 0, tcpPacket.Buffer.Count(), SocketFlags.None,
+                    onReceiveTcp, bundle);
             }
-            catch (Exception e)
+
+            // If the last udp packet has been received, make another task for the next one
+            if (!connection.UdpReady)
             {
-                write(e.ToString());
-                Application.closeConnection(connection);
+                connection.UdpReady = true;
+                Packet udpPacket = new Packet {Socket = connection.UdpSocket};
+                ConnectionPacketBundle bundle = new ConnectionPacketBundle(connection, udpPacket);
+                connection.UdpSocket.BeginReceive(udpPacket.Buffer, 0, udpPacket.Buffer.Count(), SocketFlags.None,
+                    onReceiveUdp, bundle);
             }
         }
 
@@ -91,7 +83,6 @@ namespace Squirrel.Server
         {
             if (!Application.connectionValid(connection))
                 return;
-
 
         }
 
@@ -123,10 +114,9 @@ namespace Squirrel.Server
             {
                 bytesReceived = socket.EndReceive(ar);
             }
-            catch (Exception e)
-            {
-                write(e.ToString());
-            }
+            // This exception doesn't need to be handled - it's just complaining
+            // about disposed sockets due to a client disconnect / kick
+            catch { }
 
             if (bytesReceived > 0)
             {
@@ -155,10 +145,9 @@ namespace Squirrel.Server
             {
                 bytesReceived = socket.EndReceive(ar);
             }
-            catch (Exception e)
-            {
-                write(e.ToString());
-            }
+            // This exception doesn't need to be handled - it's just complaining
+            // about disposed sockets due to a client disconnect / kick
+            catch { }
 
             if (bytesReceived > 0)
             {
