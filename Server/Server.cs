@@ -144,7 +144,8 @@ namespace Squirrel.Server
                     return;
 
                 //connection.TcpSocket.Send(Packet.bundle(new Packet()));
-                //connection.UdpSocket.SendTo(Packet.bundle(new Packet()), connection.TcpSocket.RemoteEndPoint);
+
+                connection.UdpSocket.SendTo(Packet.bundle(new Packet()), connection.TcpSocket.RemoteEndPoint);
 
                 // If there is anything in the tcp queue
                 if (tcpQueue.Any())

@@ -41,7 +41,7 @@ namespace ClientCommandline
             Console.WriteLine();
 
             m_tcpSocket.Connect(new IPEndPoint(m_ip, m_port));
-            m_udpSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
+            m_udpSocket.Bind(m_tcpSocket.LocalEndPoint);
 
             m_heartbeat.Start();
             m_receiveUdpThread.Start();
