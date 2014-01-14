@@ -110,19 +110,6 @@ namespace ClientCommandline
                             new Orientation(1.0f, 1.0f, 1.0f),
                             new Orientation(2.0f, 2.0f, 2.0f),
                             new Vec2F(1.0f, 1.0f)), 
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-                        new GamePacket(m_clientId,
-                            new Orientation(1.0f, 1.0f, 1.0f),
-                            new Orientation(2.0f, 2.0f, 2.0f),
-                            new Vec2F(1.0f, 1.0f)), 
-
                     }));
 
                     try

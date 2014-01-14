@@ -7,6 +7,7 @@ namespace Squirrel.Packets
     {
         NEW_CLIENT_PACKET,
         CHAT_PACKET,
-        GAME_PACKET
+        PROJECTILE_PACKET,
+        POSITION_PACKET
     }
 }

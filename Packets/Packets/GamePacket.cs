@@ -11,12 +11,12 @@ namespace Squirrel.Packets
         public Vec2F Velocity { get; set; }
 
         public GamePacket()
-            : base(PacketType.GAME_PACKET, -1)
+            : base(PacketType.POSITION_PACKET, -1)
         {
         }
 
         public GamePacket(int clientId, Orientation orientation, Orientation lastOrientation, Vec2F velocity)
-            : base(PacketType.GAME_PACKET, clientId)
+            : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = orientation;
             LastOrientation = lastOrientation;
@@ -24,7 +24,7 @@ namespace Squirrel.Packets
         }
 
         public GamePacket(int clientId, float x, float y, float rotation, float lx, float ly, float lrotation, float velx, float vely)
-            : base(PacketType.GAME_PACKET, clientId)
+            : base(PacketType.POSITION_PACKET, clientId)
         {
             Orientation = new Orientation(x, y, rotation);
             LastOrientation = new Orientation(lx, ly, lrotation);

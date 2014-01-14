@@ -11,6 +11,7 @@ namespace Squirrel.Server
     public static class Application
     {
         public static List<Connection> ActiveConnections { get; private set; }
+        public static Dictionary<int, Orientation> ClientLocations { get; set; }
         private static bool m_running = true;
 
         private static Listener m_listener;

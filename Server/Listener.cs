@@ -86,9 +86,18 @@ namespace Squirrel.Server
                         // Allocate the client his ID
                         connection.ClientId = clientId;
 
-                        // Send the client his new ID
+                        // Generate a random location for the client to start at.
+                        Random rng = new Random();
+
+                        // Make sure the location is within game bounds
+                        Orientation orientation = new Orientation(
+                            (float)rng.NextDouble() * Globals.GAME_WIDTH, 
+                            (float)rng.NextDouble() * Globals.GAME_HEIGHT, 
+                            (float)rng.NextDouble() * 360.0f);
+
+                        // Send the client his new ID and position
                         connection.TcpSocket.Send(
-                            Packet.bundle(new NewClientPacket(clientId)));
+                            Packet.bundle(new NewClientPacket(clientId, orientation)));
 
                         // Add the connection
                         Application.ActiveConnections.Add(connection);
