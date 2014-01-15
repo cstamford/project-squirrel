@@ -3,9 +3,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using Squirrel.Client.Objects;
+using Squirrel.Data;
 
 namespace Squirrel.Client.Interface
 {
@@ -47,7 +49,7 @@ namespace Squirrel.Client.Interface
         public bool connect(IPAddress ip, int port, string name)
         {
             // Leave if we're already connected
-            if (m_client != null && !m_client.isConnected())
+            if (m_client != null && m_client.isConnected())
                 return false;
 
             // Make a new client to handle this connection attempt
@@ -83,23 +85,34 @@ namespace Squirrel.Client.Interface
                 ChatIncomingTextBox.AppendText("[" + name + "]: " + message + Environment.NewLine)));
         }
 
-        public void clientMoved(int clientId, Entity entity)
+        public void onMoved(float delta)
         {
+            Player player = (Player) m_client.ClientLocations[m_client.ClientId];
+
+            float dx = delta * player.ForwardSpeed * (float)Math.Cos((player.Orientation.Rotation - 90) * Math.PI / 180.0f);
+            float dy = delta * player.ForwardSpeed * (float)Math.Sin((player.Orientation.Rotation - 90) * Math.PI / 180.0f);
+
+            player.move(dx, dy);
+
+            m_client.sendPositionUpdate(player.Orientation);
+        }
+
+        public void onRotate(float delta)
+        {
+            Player player = (Player)m_client.ClientLocations[m_client.ClientId];
+            player.rotate(delta * player.RotationSpeed);
+
+            m_client.sendPositionUpdate(player.Orientation);
         }
 
         public void clientConnected(Entity entity)
         {
-            // Run on the UI thread
-            Invoke((MethodInvoker) delegate
+            lock (GameWindow.RenderList)
             {
-                lock (GameWindow.RenderList)
-                {
-                    // All entities share the same asset right now
-                    entity.Asset = m_triangle;
-                    GameWindow.RenderList.Add(entity);
-                    GameWindow.Invalidate();
-                }
-            });
+                // All entities share the same asset right now
+                entity.Asset = m_triangle;
+                GameWindow.RenderList.Add(entity);
+            }
         }
 
         public void postClientConnectedToChat(int clientId)
@@ -111,15 +124,10 @@ namespace Squirrel.Client.Interface
 
         public void clientDisconnected(Entity entity)
         {
-            // Run on the UI thread
-            Invoke((MethodInvoker) delegate
+            lock (GameWindow.RenderList)
             {
-                lock (GameWindow.RenderList)
-                {
-                    GameWindow.RenderList.Remove(entity);
-                    GameWindow.Invalidate();
-                }
-            });
+                GameWindow.RenderList.Remove(entity);
+            }
         }
 
         public void postClientDisconnectedToChat(int clientId)
@@ -137,10 +145,11 @@ namespace Squirrel.Client.Interface
                 lock (GameWindow.RenderList)
                 {
                     GameWindow.RenderList.Clear();
-                    GameWindow.Invalidate();
                 }
 
                 MenuButtonDisconnect.Enabled = false;
+
+                MessageBox.Show("Disconnected!");
             });
         }
 

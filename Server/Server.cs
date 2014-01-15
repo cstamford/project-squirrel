@@ -37,8 +37,8 @@ namespace Squirrel.Server
                     // Send out heartbeat to clients
                     handleClientDisconnect();
 
-                    // Make sure we only send out network packets once every UPDATES_TICK_TIME
-                    if (m_timer.ElapsedMilliseconds < Globals.UPDATES_TICK_TIME)
+                    // Make sure we only send out network packets once every NETWORK_UPDATES_TICK_TIME
+                    if (m_timer.ElapsedMilliseconds < Globals.NETWORK_UPDATES_TICK_TIME)
                         continue;
 
                     // Add the list to the UDP queue
@@ -195,7 +195,7 @@ namespace Squirrel.Server
                 if (!Connection.connectionValid(connection))
                     continue;
 
-                if (Application.getTime() > connection.TcpLastReceived + Globals.PACKET_TIME_OUT)
+                if (Application.getTime() > connection.TcpLastReceived + Globals.CLIENT_TIME_OUT)
                 {
                     write(connection.ToString() + " timed out", LogVerbosity.LOG_VERBOSE);
                     Application.closeConnection(connection);

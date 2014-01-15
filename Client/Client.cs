@@ -15,7 +15,7 @@ namespace Squirrel.Client
     {
         public int ClientId { get; set; }
         public string Name { get; set; }
-        public static Dictionary<int, Entity> ClientLocations { get; set; }
+        public Dictionary<int, Entity> ClientLocations { get; set; }
 
         private long m_lastHeartbeat;
 
@@ -25,8 +25,8 @@ namespace Squirrel.Client
         private readonly List<Packet> m_tcpPacketQueue = new List<Packet>();
         private readonly List<Packet> m_udpPacketQueue = new List<Packet>(); 
 
-        private static Connection m_connection;
-        private static IPEndPoint m_endPoint;
+        private Connection m_connection;
+        private IPEndPoint m_endPoint;
         private bool m_connected = false;
 
         public Client(Interface.Interface parentInterface)
@@ -130,7 +130,7 @@ namespace Squirrel.Client
                 handleHeartbeat();
 
                 // Process the outbound queues
-                if (!(m_timer.ElapsedMilliseconds > Globals.UPDATES_TICK_TIME)) 
+                if (!(m_timer.ElapsedMilliseconds > Globals.NETWORK_UPDATES_TICK_TIME)) 
                     continue;
 
                 // Handle outgoing messages
@@ -193,11 +193,11 @@ namespace Squirrel.Client
                 if (ClientLocations.ContainsKey(clientId))
                 {
                     // Just update the remote orientation
-                    ClientLocations[clientId].RemoteOrientation = orientation;
+                    ClientLocations[clientId].Orientation = orientation;
                 }
                 else
                 {
-                    ClientLocations[clientId] = new Entity(null, orientation);
+                    ClientLocations[clientId] = new Entity(null, orientation, Globals.DEFAULT_SPEED, Globals.DEFAULT_SPEED);
                     m_parentInterface.clientConnected(ClientLocations[clientId]);
                 }
             }

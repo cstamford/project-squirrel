@@ -98,6 +98,10 @@ namespace Squirrel.Server
             Console.WriteLine();
             Console.WriteLine("LOG VERBOSITY: " + LogLevel);
             Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("Type 'help' for a list of commands.");
+            Console.WriteLine();
 
             m_globalTimer.Start();
 

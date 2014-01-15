@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Security.AccessControl;
+using System.Timers;
 using System.Windows.Forms;
 using Squirrel.Client.Objects;
 using Squirrel.Data;
@@ -12,13 +14,14 @@ namespace Squirrel.Client.Interface
         // The list of assets to drraw
         public List<Entity> RenderList { get; private set; }
 
-        // Mouse location variables
-        private readonly Vec2F m_mousePosition = new Vec2F();
+        // Key flags
+        private bool m_wDown = false;
+        private bool m_aDown = false;
+        private bool m_sDown = false;
+        private bool m_dDown = false;
 
-        // Mouse clicked flags
-        private bool m_mouseLeftPressed;
-        private bool m_mouseMiddlePressed;
-        private bool m_mouseRightPressed;
+        // Game timer
+        private readonly System.Timers.Timer m_forceRefreshTimer = new System.Timers.Timer(Globals.GAME_UPDATES_TICK_TIME);
 
         public GameWindow()
         {
@@ -29,6 +32,31 @@ namespace Squirrel.Client.Interface
                      ControlStyles.Selectable, true);
 
             RenderList = new List<Entity>();
+            m_forceRefreshTimer.Elapsed += timer;
+            m_forceRefreshTimer.Enabled = true;
+            m_forceRefreshTimer.AutoReset = true;
+        }
+
+        void timer(object sender, ElapsedEventArgs e)
+        {
+            Invoke((MethodInvoker) Refresh);
+
+            Interface parent = (Interface)ParentForm;
+
+            if (parent == null)
+                return;
+
+            if (m_wDown)
+                parent.onMoved(1.0f);
+
+            if (m_sDown)
+                parent.onMoved(-1.0f);
+
+            if (m_aDown)
+                parent.onRotate(-1.0f);
+
+            if (m_dDown)
+                parent.onRotate(1.0f);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -64,54 +92,34 @@ namespace Squirrel.Client.Interface
             }
         }
 
-        protected override void OnMouseMove(MouseEventArgs e)
+        protected override void OnKeyDown(KeyEventArgs e)
         {
-            m_mousePosition.x = e.Location.X;
-            m_mousePosition.y = e.Location.Y;
+            if (e.KeyCode == Keys.W)
+                m_wDown = true;
+
+            if (e.KeyCode == Keys.S)
+                m_sDown = true;
+
+            if (e.KeyCode == Keys.A)
+                m_aDown = true;
+
+            if (e.KeyCode == Keys.D)
+                m_dDown = true;
         }
 
-        protected override void OnMouseDown(MouseEventArgs e)
+        protected override void OnKeyUp(KeyEventArgs e)
         {
-            Focus();
+            if (e.KeyCode == Keys.W)
+                m_wDown = false;
 
-            switch (e.Button)
-            {
-                case MouseButtons.Left:
+            if (e.KeyCode == Keys.S)
+                m_sDown = false;
 
-                    m_mouseLeftPressed = true;
-                    break;
+            if (e.KeyCode == Keys.A)
+                m_aDown = false;
 
-                case MouseButtons.Right:
-
-                    m_mouseRightPressed = true;
-                    break;
-
-                case MouseButtons.Middle:
-
-                    m_mouseMiddlePressed = true;
-                    break;
-            }
-        }
-
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            switch (e.Button)
-            {
-                case MouseButtons.Left:
-
-                    m_mouseLeftPressed = false;
-                    break;
-
-                case MouseButtons.Right:
-
-                    m_mouseRightPressed = false;
-                    break;
-
-                case MouseButtons.Middle:
-
-                    m_mouseMiddlePressed = false;
-                    break;
-            }
+            if (e.KeyCode == Keys.D)
+                m_dDown = false;
         }
     }
 }
