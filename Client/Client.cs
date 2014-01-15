@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -15,7 +18,8 @@ namespace Squirrel.Client
     {
         public int ClientId { get; set; }
         public string Name { get; set; }
-        public Dictionary<int, Entity> ClientLocations { get; set; }
+        public Dictionary<int, Entity> ClientLocations { get; private set; }
+        public List<Projectile> ProjectileList { get; private set; } 
 
         private long m_lastHeartbeat;
 
@@ -27,14 +31,16 @@ namespace Squirrel.Client
 
         private Connection m_connection;
         private IPEndPoint m_endPoint;
-        private bool m_connected = false;
+        private bool m_connected;
 
         public Client(Interface.Interface parentInterface)
         {
             m_parentInterface = parentInterface;
             ClientLocations = new Dictionary<int, Entity>();
+            ProjectileList = new List<Projectile>();
         }
 
+        // Try to connect to the provided server
         public bool connect(IPAddress ip, int port, string name)
         {
             if (m_connected)
@@ -58,7 +64,7 @@ namespace Squirrel.Client
             // Allow us to bind UDP and TCP to the same port
             m_connection.TcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            // Block here - UI thread will terminate this thread it takes too long
+            // Blocks here
             m_connection.TcpSocket.Connect(m_endPoint);
 
             // Set the remote endpoint to the TCP socket's target (the server
@@ -119,6 +125,7 @@ namespace Squirrel.Client
             return true;
         }
 
+        // Runs the client communication loop
         public void run()
         {
             m_timer.Start();
@@ -150,16 +157,19 @@ namespace Squirrel.Client
             return m_connected;
         }
 
+        // Add a position update to the outgoing packet queue
         public void sendPositionUpdate(Orientation newOrientation)
         {
             addPacketToQueue(m_udpPacketQueue, new PositionPacket(ClientId, newOrientation));
         }
 
+        // Add a chat message to the outgoing packet queue
         public void sendChatMessage(string message)
         {
             addPacketToQueue(m_tcpPacketQueue, new ChatPacket(ClientId, Name, message));
         }
 
+        // Closes a connection
         public void closeConnection(bool closeSockets = true)
         {
             m_connected = false;
@@ -185,6 +195,7 @@ namespace Squirrel.Client
             m_parentInterface.onDisconnect();
         }
 
+        // Interpolates every entity in the ClientLocations list
         public void interpolate()
         {
             lock (ClientLocations)
@@ -194,17 +205,43 @@ namespace Squirrel.Client
                     pair.Value.interpolate();
                 }
             }
+
+            lock (ProjectileList)
+            {
+                foreach (Projectile projectile in ProjectileList)
+                {
+                    projectile.interpolate();
+                }
+            }
         }
 
-        private void updateClientPosition(int clientId, Orientation orientation)
+        // Creates a new projectile
+        public void createProjectile(Orientation orientation)
+        {
+            addPacketToQueue(m_tcpPacketQueue, new ProjectilePacket(ClientId, orientation));
+        }
+
+        // Changes the orientation 
+        private void updateClientPosition(int clientId, Orientation orientation, bool owrite = false)
         {
             lock (ClientLocations)
             {
                 // If the client is already here
                 if (ClientLocations.ContainsKey(clientId))
                 {
-                    // Just update the remote orientation
-                    ClientLocations[clientId].RemoteOrientation = orientation;
+                    Entity ent = ClientLocations[clientId];
+
+                    lock (ent)
+                    {
+                        // If the packet had the override flag, use it
+                        if (owrite && clientId == ClientId)
+                        {
+                            ClientLocations[clientId].Orientation = orientation;
+                        }
+
+                        // Just update the remote orientation
+                        ClientLocations[clientId].RemoteOrientation = orientation;
+                    }
                 }
                 else
                 {
@@ -214,16 +251,17 @@ namespace Squirrel.Client
             }
         }
 
+        // Remove a client from the render list
         private void removeClient(int clientId)
         {
             lock (ClientLocations)
             {
-                // If this client exists
-                if (ClientLocations.ContainsKey(clientId))
-                {
-                    m_parentInterface.onClientDisconnected(ClientLocations[clientId]);
-                    ClientLocations.Remove(clientId);
-                }
+                // If this client doesn't exist, leave
+                if (!ClientLocations.ContainsKey(clientId)) 
+                    return;
+
+                m_parentInterface.onClientDisconnected(ClientLocations[clientId]);
+                ClientLocations.Remove(clientId);
             }
         }
 
@@ -262,6 +300,7 @@ namespace Squirrel.Client
             }
         }
 
+        // Handle sending the heartbeat packet
         private void handleHeartbeat()
         {
             // Heartbeat time
@@ -283,6 +322,7 @@ namespace Squirrel.Client
             }
         }
 
+        // Handle incoming packets
         private void handleReceivePackets(IAsyncResult ar)
         {
             ConnectionPacketBundle bundle = (ConnectionPacketBundle)ar.AsyncState;
@@ -342,14 +382,15 @@ namespace Squirrel.Client
                     case PacketType.CHAT_PACKET:
 
                         ChatPacket chatPacket = (ChatPacket)packet;
-                        m_parentInterface.clientChat(chatPacket.Name, chatPacket.Message);
+                        m_parentInterface.onChatReceived(chatPacket.Name, chatPacket.Message);
 
                         break;
 
                     case PacketType.POSITION_PACKET:
 
                         PositionPacket positionPacket = (PositionPacket)packet;
-                        updateClientPosition(positionPacket.ClientId, positionPacket.Orientation);
+                        updateClientPosition(positionPacket.ClientId, positionPacket.Orientation, positionPacket.OverrideLocal);
+
                         break;
 
                     case PacketType.CLIENT_DISCONNECT_PACKET:
@@ -357,6 +398,13 @@ namespace Squirrel.Client
                         ClientDisconnectPacket discoPacket = (ClientDisconnectPacket)packet;
                         removeClient(discoPacket.ClientId);
                         m_parentInterface.postClientDisconnectedToChat(discoPacket.ClientId);
+
+                        break;
+
+                    case PacketType.PROJECTILE_PACKET:
+
+                        ProjectilePacket projectilePacket = (ProjectilePacket)packet;
+                        m_parentInterface.addProjectile(projectilePacket.Orientation);
 
                         break;
                 }
@@ -413,6 +461,7 @@ namespace Squirrel.Client
             }
         }
 
+        // Adds a packet to the supplied queue
         private void addPacketToQueue(List<Packet> queue, Packet packet)
         {
             lock (queue)
@@ -421,6 +470,7 @@ namespace Squirrel.Client
             }
         }
 
+        // Clears the supplied queue
         private void clearQueue(List<Packet> queue)
         {
             lock (queue)

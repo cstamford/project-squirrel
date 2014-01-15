@@ -79,6 +79,7 @@
     <Compile Include="Application.cs" />
     <Compile Include="Objects\Entity.cs" />
     <Compile Include="Objects\Player.cs" />
+    <Compile Include="Objects\Projectile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Interface\ConnectDialog.resx">
       <DependentUpon>ConnectDialog.cs</DependentUpon>

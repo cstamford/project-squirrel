@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;

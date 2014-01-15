@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 
 namespace Squirrel.Data
 {

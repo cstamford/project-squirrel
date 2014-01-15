@@ -1,11 +1,12 @@
+// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Security.AccessControl;
 using System.Timers;
 using System.Windows.Forms;
 using Squirrel.Client.Objects;
-using Squirrel.Data;
 
 namespace Squirrel.Client.Interface
 {
@@ -19,6 +20,7 @@ namespace Squirrel.Client.Interface
         private bool m_aDown;
         private bool m_sDown;
         private bool m_dDown;
+        private bool m_spaceDown;
 
         // Game timer
         private readonly System.Timers.Timer m_forceRefreshTimer = new System.Timers.Timer(Globals.GAME_UPDATES_TICK_TIME);
@@ -41,11 +43,15 @@ namespace Squirrel.Client.Interface
         {
             Interface parent = (Interface)ParentForm;
 
-            // If we're not connected, there's no point being here
-            if (parent == null || !parent.ClientConnected)
+            if (parent == null)
                 return;
 
-            Invoke((MethodInvoker) Refresh);
+            // Run on UI Thread
+            Invoke((MethodInvoker)Refresh);
+
+            // If we're not connected, there's no point being here
+            if (!parent.ClientConnected)
+                return;
 
             parent.onGameTick();
 
@@ -60,11 +66,14 @@ namespace Squirrel.Client.Interface
 
             if (m_dDown)
                 parent.onRotate(1.0f);
+
+            if (m_spaceDown)
+                parent.onProjectile();
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            e.Graphics.Clear(SystemColors.ControlLight);
+            e.Graphics.Clear(SystemColors.ControlDark);
 
             e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
@@ -108,6 +117,9 @@ namespace Squirrel.Client.Interface
 
             if (e.KeyCode == Keys.D)
                 m_dDown = true;
+
+            if (e.KeyCode == Keys.Space)
+                m_spaceDown = true;
         }
 
         protected override void OnKeyUp(KeyEventArgs e)
@@ -123,6 +135,9 @@ namespace Squirrel.Client.Interface
 
             if (e.KeyCode == Keys.D)
                 m_dDown = false;
+
+            if (e.KeyCode == Keys.Space)
+                m_spaceDown = false;
         }
     }
 }

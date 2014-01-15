@@ -30,7 +30,7 @@
         {
             this.MainLayoutGrid = new System.Windows.Forms.TableLayoutPanel();
             this.GameLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
+            this.BottomInfoLabel = new System.Windows.Forms.Label();
             this.ChatLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.ChatBarLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.SendChatButton = new System.Windows.Forms.Button();
@@ -41,6 +41,7 @@
             this.MenuButtonConnect = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonDisconnect = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonExit = new System.Windows.Forms.ToolStripMenuItem();
+            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
             this.MainLayoutGrid.SuspendLayout();
             this.GameLayoutPanel.SuspendLayout();
             this.ChatLayoutPanel.SuspendLayout();
@@ -68,26 +69,32 @@
             // 
             // GameLayoutPanel
             // 
+            this.GameLayoutPanel.BackColor = System.Drawing.SystemColors.ControlLight;
             this.GameLayoutPanel.ColumnCount = 1;
             this.GameLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.GameLayoutPanel.Controls.Add(this.GameWindow, 0, 0);
+            this.GameLayoutPanel.Controls.Add(this.BottomInfoLabel, 0, 1);
             this.GameLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.GameLayoutPanel.Location = new System.Drawing.Point(0, 0);
-            this.GameLayoutPanel.Margin = new System.Windows.Forms.Padding(0);
+            this.GameLayoutPanel.Location = new System.Drawing.Point(3, 3);
+            this.GameLayoutPanel.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.GameLayoutPanel.Name = "GameLayoutPanel";
             this.GameLayoutPanel.RowCount = 2;
             this.GameLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.GameLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.GameLayoutPanel.Size = new System.Drawing.Size(1011, 738);
+            this.GameLayoutPanel.Size = new System.Drawing.Size(1005, 735);
             this.GameLayoutPanel.TabIndex = 1;
             // 
-            // GameWindow
+            // BottomInfoLabel
             // 
-            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.GameWindow.Location = new System.Drawing.Point(3, 3);
-            this.GameWindow.Name = "GameWindow";
-            this.GameWindow.Size = new System.Drawing.Size(1005, 702);
-            this.GameWindow.TabIndex = 0;
+            this.BottomInfoLabel.AutoSize = true;
+            this.BottomInfoLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BottomInfoLabel.Location = new System.Drawing.Point(0, 705);
+            this.BottomInfoLabel.Margin = new System.Windows.Forms.Padding(0);
+            this.BottomInfoLabel.Name = "BottomInfoLabel";
+            this.BottomInfoLabel.Size = new System.Drawing.Size(1005, 30);
+            this.BottomInfoLabel.TabIndex = 1;
+            this.BottomInfoLabel.Text = "DISCONNECTED";
+            this.BottomInfoLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // ChatLayoutPanel
             // 
@@ -126,11 +133,12 @@
             // 
             // SendChatButton
             // 
-            this.SendChatButton.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.SendChatButton.Location = new System.Drawing.Point(197, 0);
-            this.SendChatButton.Margin = new System.Windows.Forms.Padding(0);
+            this.SendChatButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
+            this.SendChatButton.Enabled = false;
+            this.SendChatButton.Location = new System.Drawing.Point(197, 2);
+            this.SendChatButton.Margin = new System.Windows.Forms.Padding(0, 2, 0, 2);
             this.SendChatButton.Name = "SendChatButton";
-            this.SendChatButton.Size = new System.Drawing.Size(50, 25);
+            this.SendChatButton.Size = new System.Drawing.Size(50, 21);
             this.SendChatButton.TabIndex = 0;
             this.SendChatButton.Text = "Send";
             this.SendChatButton.UseVisualStyleBackColor = true;
@@ -146,6 +154,7 @@
             this.ChatOutgoingTextBox.Size = new System.Drawing.Size(191, 20);
             this.ChatOutgoingTextBox.TabIndex = 1;
             this.ChatOutgoingTextBox.Text = "Hello, I\'m new to the server";
+            this.ChatOutgoingTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.ChatOutgoingTextBox_KeyDown);
             // 
             // ChatIncomingTextBox
             // 
@@ -203,6 +212,15 @@
             this.MenuButtonExit.Text = "Exit";
             this.MenuButtonExit.Click += new System.EventHandler(this.MenuButtonExit_Click);
             // 
+            // GameWindow
+            // 
+            this.GameWindow.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.GameWindow.Location = new System.Drawing.Point(3, 3);
+            this.GameWindow.Name = "GameWindow";
+            this.GameWindow.Size = new System.Drawing.Size(999, 699);
+            this.GameWindow.TabIndex = 0;
+            // 
             // Interface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -210,14 +228,15 @@
             this.ClientSize = new System.Drawing.Size(1264, 762);
             this.Controls.Add(this.MainLayoutGrid);
             this.Controls.Add(this.MainMenu);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MinimumSize = new System.Drawing.Size(1280, 800);
             this.Name = "Interface";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Project Raccoon Client";
+            this.Text = "Project Squirrel Client";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Interface_FormClosing);
             this.Load += new System.EventHandler(this.Interface_Load);
             this.MainLayoutGrid.ResumeLayout(false);
             this.GameLayoutPanel.ResumeLayout(false);
+            this.GameLayoutPanel.PerformLayout();
             this.ChatLayoutPanel.ResumeLayout(false);
             this.ChatLayoutPanel.PerformLayout();
             this.ChatBarLayoutPanel.ResumeLayout(false);
@@ -244,6 +263,7 @@
         private System.Windows.Forms.TextBox ChatOutgoingTextBox;
         private System.Windows.Forms.TextBox ChatIncomingTextBox;
         private GameWindow GameWindow;
+        private System.Windows.Forms.Label BottomInfoLabel;
 
     }
 }

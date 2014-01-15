@@ -1,7 +1,11 @@
-﻿using System;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Squirrel.Data;
 
@@ -10,7 +14,8 @@ namespace Squirrel.Server
     public static class Application
     {
         public static List<Connection> ActiveConnections { get; private set; }
-        public static Dictionary<int, Orientation> ClientLocations { get; set; }
+        public static List<Orientation> ActiveProjectiles { get; private set; }
+        public static Dictionary<int, Orientation> ClientLocations { get; private set; }
         public static LogVerbosity LogLevel { get; set; }
 
         private static readonly Stopwatch m_globalTimer = new Stopwatch();
@@ -22,6 +27,7 @@ namespace Squirrel.Server
         private static Server m_server;
         private static Thread m_serverThread;
 
+        // Returns the connection assocated with a client ID
         public static Connection getConnection(int clientId)
         {
             lock (ActiveConnections)
@@ -30,11 +36,13 @@ namespace Squirrel.Server
             }
         }
 
+        // Gets the current server time
         public static long getTime()
         {
             return m_globalTimer.ElapsedMilliseconds;
         }
 
+        // Close the provided connection
         public static void closeConnection(Connection connection)
         {
             Console.WriteLine("Client ID " + connection.ClientId + " dropped");
@@ -68,6 +76,7 @@ namespace Squirrel.Server
             connection.ClientId = -1;
         }
 
+        // Update the client location list with a new orientation
         public static void updateClientLocation(int clientId, Orientation newOrientation)
         {
             lock (ClientLocations)
@@ -76,6 +85,7 @@ namespace Squirrel.Server
             }
         }
 
+        // Called by the listener when a client has connected
         public static void clientConnected(int clientId, Orientation orientation)
         {
             m_server.clientConnected(clientId, orientation);
@@ -84,8 +94,9 @@ namespace Squirrel.Server
         private static void Main(string[] args)
         {
             ActiveConnections = new List<Connection>();
+            ActiveProjectiles = new List<Orientation>();
             ClientLocations = new Dictionary<int, Orientation>();
-            LogLevel = LogVerbosity.LOG_VERBOSE;
+            LogLevel = LogVerbosity.LOG_DEBUG;
 
             Console.Title = "Project Squirrel Server";
 
@@ -128,6 +139,7 @@ namespace Squirrel.Server
             }
         }
 
+        // Handles input
         private static void handleInput(string input)
         {
 
@@ -230,10 +242,80 @@ namespace Squirrel.Server
 
                 case "HELP":
 
-                    Console.WriteLine("quit                       :     Closes the server");
-                    Console.WriteLine("kick <clientID>            :     Kicks the provided client");
-                    Console.WriteLine("status                     :     Displays the status of all connected clients");
-                    Console.WriteLine("status <clientID>          :     Displays the status of provided client");
+                    Console.WriteLine("quit                         :  Closes the server");
+                    Console.WriteLine("kick <clientID>              :  Kicks the provided client");
+                    Console.WriteLine("status                       :  Displays the status of all connected clients");
+                    Console.WriteLine("status <clientID>            :  Displays the status of provided client");
+                    Console.WriteLine("say <message>                :  Outputs a chat message to all connected clients");
+                    Console.WriteLine("set <clientID> <x> <y> <rot> :  Set the clientID to provided coordinates");
+
+                    break;
+
+                case "SAY":
+
+                    if (commandCount == 1)
+                    {
+                         Console.WriteLine("Invalid syntax, no message provided");
+                    }
+                    else
+                    {
+                        StringBuilder builder = new StringBuilder();
+          
+                        for (int i = 1; i < commandCount; ++i)
+                        {
+                            builder.Append(command[i]);
+                            builder.Append(' ');
+                        }
+
+                        m_server.sendChatPacket(0, "SERVER", builder.ToString());
+                        Console.WriteLine("Broadcasted message " + builder.ToString());
+                    }
+
+                    break;
+
+                case "SET":
+
+                    if (commandCount != 5)
+                    {
+                        Console.WriteLine("Invalid syntax, correct is set <clientID> <x> <y> <rotation>");
+                    }
+                    else
+                    {
+                        float x;
+                        float y;
+                        float rotation;
+
+                        if (!int.TryParse(command[1], out clientId) || ActiveConnections.All(client => client.ClientId != clientId))
+                        {
+                            Console.WriteLine("Invalid syntax, invalid client ID");
+                            break;
+                        }
+
+                        if (!float.TryParse(command[2], out x))
+                        {
+                            Console.WriteLine("Invalid syntax, could not parse x coordinate");
+                            break;
+                        }
+
+                        if (!float.TryParse(command[3], out y))
+                        {
+                            Console.WriteLine("Invalid syntax, could not parse y coordinate");
+                            break;
+                        }
+
+                        if (!float.TryParse(command[4], out rotation))
+                        {
+                            Console.WriteLine("Invalid syntax, could not parse rotation");
+                            break;
+                        }
+
+                        Orientation newOrientation = new Orientation(x, y, rotation);
+
+                        ClientLocations[clientId] = newOrientation;
+                        m_server.sendOverridePosPacket(clientId, newOrientation);
+
+                        Console.WriteLine("Forced Client ID " + clientId + " to position " + newOrientation.ToString());
+                    }
 
                     break;
 

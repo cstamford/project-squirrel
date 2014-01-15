@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 
 namespace Squirrel.Client
 {

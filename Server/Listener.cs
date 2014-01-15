@@ -1,5 +1,7 @@
-﻿using System;
-using System.Diagnostics;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;

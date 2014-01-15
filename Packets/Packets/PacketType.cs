@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 
 namespace Squirrel.Packets
 {
@@ -10,7 +13,7 @@ namespace Squirrel.Packets
         CLIENT_DISCONNECT_PACKET,
         HEARTBEAT_PACKET,
         CHAT_PACKET,
-        PROJECTILE_PACKET,
-        POSITION_PACKET
+        POSITION_PACKET,
+        PROJECTILE_PACKET
     }
 }

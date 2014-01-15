@@ -1,4 +1,7 @@
-﻿using System.Net;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System.Net;
 using System.Net.Sockets;
 
 namespace Squirrel.Data

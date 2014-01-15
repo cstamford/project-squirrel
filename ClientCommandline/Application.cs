@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Management.Instrumentation;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Squirrel;
-using Squirrel.Data;
 using Squirrel.Packets;
 
 namespace ClientCommandline

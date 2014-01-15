@@ -16,7 +16,7 @@ namespace Squirrel.Server
         private readonly Stopwatch m_timer = new Stopwatch();
 
         private readonly List<Packet> m_tcpPacketQueue = new List<Packet>();
-        private readonly List<Packet> m_udpPacketQueue = new List<Packet>(); 
+        private readonly List<Packet> m_udpPacketQueue = new List<Packet>();
 
         private bool m_running = true;
 
@@ -41,7 +41,7 @@ namespace Squirrel.Server
                     if (m_timer.ElapsedMilliseconds < Globals.NETWORK_UPDATES_TICK_TIME)
                         continue;
 
-                    // Add the list to the UDP queue
+                    // Add the projectile packets list to the UDP queue
                     addPacketsToQueue(m_udpPacketQueue, getPositionPacketList());
 
                     // Handle outgoing messages
@@ -78,6 +78,23 @@ namespace Squirrel.Server
         public void setRunning(bool state)
         {
             m_running = state;
+        }
+
+        public void sendChatPacket(int clientID, string name, string message)
+        {
+            lock (m_tcpPacketQueue)
+            {
+                m_tcpPacketQueue.Add(new ChatPacket(0, name, message));
+            }
+        }
+
+        // Send via TCP, to ensure it gets there
+        public void sendOverridePosPacket(int clientID, Orientation orientation)
+        {
+            lock (m_tcpPacketQueue)
+            {
+                m_tcpPacketQueue.Add(new PositionPacket(clientID, orientation, true));
+            }
         }
 
         // Handle recieving incoming messages
@@ -162,8 +179,9 @@ namespace Squirrel.Server
         {
             lock (queue)
             {
-                // Don't send packets to the client where it originiated from, unless it's a chat packet
-                foreach (Packet packet in queue.Where(packet => packet.ClientId != clientId || packet.PacketType == PacketType.CHAT_PACKET))
+                // Don't send packets to the client where it originiated from, unless it's a chat packet, or an override local position packet
+                foreach (Packet packet in queue.Where(packet => packet.ClientId != clientId || packet.PacketType == PacketType.CHAT_PACKET 
+                    || (packet.PacketType == PacketType.POSITION_PACKET && ((PositionPacket)packet).OverrideLocal)))
                 {
                     byte[] rawArray = Packet.bundle(packet);
 
@@ -176,7 +194,7 @@ namespace Squirrel.Server
                     }
                     catch
                     {
-                        // This catches exceptions when sending packets to sockets
+                        // This catches an exception thrown when sending packets to sockets
                         // which have been closed by the client.
                         // We don't need to handle this because the heartbeat will remove
                         // the disconnected client after the timeout delay has passed.
@@ -270,14 +288,33 @@ namespace Squirrel.Server
                         PositionPacket positionPacket = (PositionPacket) packet;
                         Application.updateClientLocation(packet.ClientId, positionPacket.Orientation);
                         break;
+
+                    case PacketType.PROJECTILE_PACKET:
+
+                        ProjectilePacket projectilePacket = (ProjectilePacket)packet;
+                        projectilePacket.ClientId = 0;
+
+                        lock (Application.ActiveProjectiles)
+                        {
+                            Application.ActiveProjectiles.Add(projectilePacket.Orientation);
+                        }
+
+                        addPacketToQueue(m_tcpPacketQueue, projectilePacket);
+                        break;
                 }
             }
 
         }
 
-        private List<Packet> getPositionPacketList()
+        private IEnumerable<Packet> getPositionPacketList()
         {
-           return Application.ClientLocations.Select(pair => new PositionPacket(pair.Key, pair.Value)).Cast<Packet>().ToList();
+            lock (Application.ClientLocations)
+            {
+                return
+                    Application.ClientLocations.Select(pair => new PositionPacket(pair.Key, pair.Value))
+                        .Cast<Packet>()
+                        .ToList();
+            }
         }
 
         private void addPacketToQueue(List<Packet> queue, Packet packet)

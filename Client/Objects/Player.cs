@@ -1,4 +1,7 @@
-﻿using System.Drawing;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System.Drawing;
 using Squirrel.Data;
 
 namespace Squirrel.Client.Objects

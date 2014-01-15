@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Project Squirrel 
+// Copyright 2013-2014 Chris Stamford
+
+using System;
 using System.Net;
 using System.Windows.Forms;
 
@@ -33,12 +36,11 @@ namespace Squirrel.Client.Interface
             {
                 if (((Interface)Owner).connect(address, port, name))
                 {
-                    MessageBox.Show("Connected!");
                     Close();
                 }
                 else
                 {
-                    MessageBox.Show("Failed to connect!!");
+                    MessageBox.Show("Failed to connect!");
                 }
             }
             catch (Exception exception)
