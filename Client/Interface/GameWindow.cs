@@ -15,10 +15,10 @@ namespace Squirrel.Client.Interface
         public List<Entity> RenderList { get; private set; }
 
         // Key flags
-        private bool m_wDown = false;
-        private bool m_aDown = false;
-        private bool m_sDown = false;
-        private bool m_dDown = false;
+        private bool m_wDown;
+        private bool m_aDown;
+        private bool m_sDown;
+        private bool m_dDown;
 
         // Game timer
         private readonly System.Timers.Timer m_forceRefreshTimer = new System.Timers.Timer(Globals.GAME_UPDATES_TICK_TIME);
@@ -39,12 +39,15 @@ namespace Squirrel.Client.Interface
 
         void timer(object sender, ElapsedEventArgs e)
         {
-            Invoke((MethodInvoker) Refresh);
-
             Interface parent = (Interface)ParentForm;
 
-            if (parent == null)
+            // If we're not connected, there's no point being here
+            if (parent == null || !parent.ClientConnected)
                 return;
+
+            Invoke((MethodInvoker) Refresh);
+
+            parent.onGameTick();
 
             if (m_wDown)
                 parent.onMoved(1.0f);

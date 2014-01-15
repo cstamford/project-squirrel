@@ -86,7 +86,7 @@ namespace Squirrel.Client
                     ClientLocations[m_connection.ClientId] = new Player(null, ncPacket.Orientation);
 
                     // Send a client connected message to the interface, so it can update
-                    m_parentInterface.clientConnected(ClientLocations[m_connection.ClientId]);
+                    m_parentInterface.onClientConnected(ClientLocations[m_connection.ClientId]);
                 }
             }
             // Failed to receive or unbundle the orientation packet
@@ -185,6 +185,17 @@ namespace Squirrel.Client
             m_parentInterface.onDisconnect();
         }
 
+        public void interpolate()
+        {
+            lock (ClientLocations)
+            {
+                foreach (KeyValuePair<int, Entity> pair in ClientLocations.Where(pair => pair.Key != ClientId))
+                {
+                    pair.Value.interpolate();
+                }
+            }
+        }
+
         private void updateClientPosition(int clientId, Orientation orientation)
         {
             lock (ClientLocations)
@@ -193,12 +204,12 @@ namespace Squirrel.Client
                 if (ClientLocations.ContainsKey(clientId))
                 {
                     // Just update the remote orientation
-                    ClientLocations[clientId].Orientation = orientation;
+                    ClientLocations[clientId].RemoteOrientation = orientation;
                 }
                 else
                 {
                     ClientLocations[clientId] = new Entity(null, orientation, Globals.DEFAULT_SPEED, Globals.DEFAULT_SPEED);
-                    m_parentInterface.clientConnected(ClientLocations[clientId]);
+                    m_parentInterface.onClientConnected(ClientLocations[clientId]);
                 }
             }
         }
@@ -210,7 +221,7 @@ namespace Squirrel.Client
                 // If this client exists
                 if (ClientLocations.ContainsKey(clientId))
                 {
-                    m_parentInterface.clientDisconnected(ClientLocations[clientId]);
+                    m_parentInterface.onClientDisconnected(ClientLocations[clientId]);
                     ClientLocations.Remove(clientId);
                 }
             }

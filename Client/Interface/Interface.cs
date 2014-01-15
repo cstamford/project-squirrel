@@ -6,6 +6,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
 using Squirrel.Client.Objects;
 using Squirrel.Data;
 
@@ -13,6 +14,13 @@ namespace Squirrel.Client.Interface
 {
     public partial class Interface : Form
     {
+        public static Interface DebugInstance;
+
+        public bool ClientConnected
+        {
+            get { return m_client != null && m_client.isConnected(); }
+        }
+
         private Client m_client;
         private Thread m_clientThread;
         private readonly Bitmap m_triangle;
@@ -20,6 +28,7 @@ namespace Squirrel.Client.Interface
 
         public Interface()
         {
+            DebugInstance = this;
             InitializeComponent();
 
             string assetPath =
@@ -39,6 +48,14 @@ namespace Squirrel.Client.Interface
             {
                 MessageBox.Show(exception.ToString());
             }
+        }
+
+        public void updateDebugPanel(float a, float b, float c)
+        {
+            Invoke((MethodInvoker)delegate
+            {
+                Text = "" + a + "    " + b + "    " + c;
+            });
         }
 
         public long getTime()
@@ -65,17 +82,6 @@ namespace Squirrel.Client.Interface
             MenuButtonDisconnect.Enabled = true;
 
             return true;
-        }
-
-        private void Interface_Load(object sender, System.EventArgs e)
-        {
-            m_globalTimer.Start();
-        }
-
-        private void Interface_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (m_client != null)
-                m_client.closeConnection(false);
         }
 
         public void clientChat(string name, string message)
@@ -105,7 +111,7 @@ namespace Squirrel.Client.Interface
             m_client.sendPositionUpdate(player.Orientation);
         }
 
-        public void clientConnected(Entity entity)
+        public void onClientConnected(Entity entity)
         {
             lock (GameWindow.RenderList)
             {
@@ -122,7 +128,7 @@ namespace Squirrel.Client.Interface
                 ChatIncomingTextBox.AppendText("Client " + clientId + " connected." + Environment.NewLine)));
         }
 
-        public void clientDisconnected(Entity entity)
+        public void onClientDisconnected(Entity entity)
         {
             lock (GameWindow.RenderList)
             {
@@ -148,9 +154,24 @@ namespace Squirrel.Client.Interface
                 }
 
                 MenuButtonDisconnect.Enabled = false;
-
-                MessageBox.Show("Disconnected!");
+                ChatIncomingTextBox.Text = "";
             });
+        }
+
+        public void onGameTick()
+        {
+            m_client.interpolate();
+        }
+
+        private void Interface_Load(object sender, System.EventArgs e)
+        {
+            m_globalTimer.Start();
+        }
+
+        private void Interface_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (m_client != null)
+                m_client.closeConnection(false);
         }
 
         private void SendChatButton_Click(object sender, EventArgs e)
