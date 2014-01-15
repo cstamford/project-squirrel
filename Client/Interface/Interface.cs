@@ -50,7 +50,7 @@ namespace Squirrel.Client.Interface
             }
         }
 
-        public void updateDebugPanel(float a, float b, float c)
+        public void updateDebugPanel(float a, bool b, bool c)
         {
             Invoke((MethodInvoker)delegate
             {

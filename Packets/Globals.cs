@@ -10,7 +10,7 @@
 
         public const int CLIENT_TIME_OUT = 2000;
 
-        public const float NETWORK_UPDATES_PER_SECOND = 1.0f;
+        public const float NETWORK_UPDATES_PER_SECOND = 2.0f;
         public const float NETWORK_UPDATES_TICK_TIME = 1000.0f / NETWORK_UPDATES_PER_SECOND;
 
         public const float GAME_UPDATES_PER_SECOND = 60.0f;

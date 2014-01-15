@@ -55,11 +55,13 @@ namespace Squirrel.Client.Objects
             Orientation.Rotation = wrapRotation(Orientation.Rotation);
         }
 
+        // Returns the difference between two angles, wrapped between [0 ... 180]
         public static float differenceBetween(float angle1, float angle2)
         {
             return 180.0f - Math.Abs(Math.Abs(angle1 - angle2) - 180.0f);
         }
 
+        // Wraps an angle between [0 ... 360]
         public static float wrapRotation(float rotation)
         {
             if (rotation > 360.0f)
@@ -71,38 +73,53 @@ namespace Squirrel.Client.Objects
             return rotation;
         }
 
-        // Simple interpolation that moves current position towards
-        // network position at a speed faster than movement speed - therefore accounting
-        // for latency
+        // Simple interpolation that moves current position towards remote position
         public void interpolate(float delta = 1.0f)
         {
             float angle1 = Orientation.Rotation;
             float angle2 = RemoteOrientation.Rotation;
 
-            if (angle1 > angle2)
+            float diff = differenceBetween(angle1, angle2);
+
+            if (diff > RotationSpeed)
             {
-                Orientation.Rotation -= delta;
+                // If we need to turn right
+                if (diff < differenceBetween(wrapRotation(angle1 + 1), angle2))
+                {
+                    delta *= -1;
+                    Orientation.Rotation += RotationSpeed*delta;
+
+                    diff = differenceBetween(Orientation.Rotation, RemoteOrientation.Rotation);
+
+                    // If we're basically there, snap to it
+                    if (diff < RotationSpeed)
+                        Orientation.Rotation = RemoteOrientation.Rotation;
+                }
+                // Else if we need to turn left
+                else if (diff > differenceBetween(wrapRotation(angle1 + 1), angle2))
+                {
+                    Orientation.Rotation += RotationSpeed*delta;
+
+                    diff = differenceBetween(Orientation.Rotation, RemoteOrientation.Rotation);
+
+                    // If we're basically there, snap to it
+                    if (diff < RotationSpeed)
+                        Orientation.Rotation = RemoteOrientation.Rotation;
+                }
             }
-            else
-            {
-                Orientation.Rotation += delta;
-            }
 
-
-
-
-
+            // Get delta x from the current orientation (interpolated)
             float dx = delta * ForwardSpeed * (float)Math.Cos((Orientation.Rotation - 90) * Math.PI / 180.0f);
 
             if (dx < 0)
                 dx *= -1;
 
+            // Get delta y from the current orientation (interpolated)
             float dy = delta * ForwardSpeed * (float)Math.Sin((Orientation.Rotation - 90) * Math.PI / 180.0f);
 
             if (dy < 0)
                 dy *= -1;
 
-            
             // The current position is higher than the remote / desired position
             // We need to move down
             if (Orientation.Position.y < RemoteOrientation.Position.y)
@@ -123,7 +140,6 @@ namespace Squirrel.Client.Objects
                     Orientation.Position.y = RemoteOrientation.Position.y;
                 
             }
-
 
             // The current position is to the left of the remote / desired position
             // We need to move right
