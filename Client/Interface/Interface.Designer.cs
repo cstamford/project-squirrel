@@ -30,6 +30,7 @@
         {
             this.MainLayoutGrid = new System.Windows.Forms.TableLayoutPanel();
             this.GameLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
             this.BottomInfoLabel = new System.Windows.Forms.Label();
             this.ChatLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.ChatBarLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
@@ -41,7 +42,6 @@
             this.MenuButtonConnect = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonDisconnect = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
             this.MainLayoutGrid.SuspendLayout();
             this.GameLayoutPanel.SuspendLayout();
             this.ChatLayoutPanel.SuspendLayout();
@@ -83,6 +83,15 @@
             this.GameLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.GameLayoutPanel.Size = new System.Drawing.Size(1005, 735);
             this.GameLayoutPanel.TabIndex = 1;
+            // 
+            // GameWindow
+            // 
+            this.GameWindow.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.GameWindow.Location = new System.Drawing.Point(3, 3);
+            this.GameWindow.Name = "GameWindow";
+            this.GameWindow.Size = new System.Drawing.Size(999, 699);
+            this.GameWindow.TabIndex = 0;
             // 
             // BottomInfoLabel
             // 
@@ -211,15 +220,6 @@
             this.MenuButtonExit.Size = new System.Drawing.Size(133, 22);
             this.MenuButtonExit.Text = "Exit";
             this.MenuButtonExit.Click += new System.EventHandler(this.MenuButtonExit_Click);
-            // 
-            // GameWindow
-            // 
-            this.GameWindow.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.GameWindow.Location = new System.Drawing.Point(3, 3);
-            this.GameWindow.Name = "GameWindow";
-            this.GameWindow.Size = new System.Drawing.Size(999, 699);
-            this.GameWindow.TabIndex = 0;
             // 
             // Interface
             // 

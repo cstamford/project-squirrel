@@ -299,7 +299,7 @@ namespace Squirrel.Server
                             Application.ActiveProjectiles.Add(projectilePacket.Orientation);
                         }
 
-                        addPacketToQueue(m_tcpPacketQueue, projectilePacket);
+                        addPacketToQueue(m_udpPacketQueue, projectilePacket);
                         break;
                 }
             }

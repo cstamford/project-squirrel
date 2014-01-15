@@ -10,7 +10,6 @@ namespace Squirrel
 
         public const int PACKET_BUFFER_SIZE = 1024;
         public const int PACKET_HEARTBEAT_FREQUENCY = 1000;
-        public const int PROJECTILE_UPDATE_FREQUENCY = 1000;
 
         public const int CLIENT_TIME_OUT = 5000;
 

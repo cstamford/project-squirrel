@@ -96,7 +96,7 @@ namespace Squirrel.Server
             ActiveConnections = new List<Connection>();
             ActiveProjectiles = new List<Orientation>();
             ClientLocations = new Dictionary<int, Orientation>();
-            LogLevel = LogVerbosity.LOG_DEBUG;
+            LogLevel = LogVerbosity.LOG_VERBOSE;
 
             Console.Title = "Project Squirrel Server";
 

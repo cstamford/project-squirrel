@@ -218,7 +218,7 @@ namespace Squirrel.Client
         // Creates a new projectile
         public void createProjectile(Orientation orientation)
         {
-            addPacketToQueue(m_tcpPacketQueue, new ProjectilePacket(ClientId, orientation));
+            addPacketToQueue(m_udpPacketQueue, new ProjectilePacket(ClientId, orientation));
         }
 
         // Changes the orientation 
