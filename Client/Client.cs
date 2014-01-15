@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using Squirrel.Client.Objects;
@@ -22,6 +23,9 @@ namespace Squirrel.Client
 
         private readonly Stopwatch m_timer = new Stopwatch();
         private readonly Interface.Interface m_parentInterface;
+
+        private readonly List<Packet> m_tcpPacketQueue = new List<Packet>();
+        private readonly List<Packet> m_udpPacketQueue = new List<Packet>(); 
 
         private static Connection m_connection;
         private static IPEndPoint m_endPoint;
@@ -125,26 +129,41 @@ namespace Squirrel.Client
             {
                 handleIncomingMessages();
 
-                if (m_parentInterface.getTime() <= m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY)
+                // Heartbeat time
+                if (m_parentInterface.getTime() > m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY)
+                {
+                    lock (m_connection)
+                    {
+                        byte[] packet = Packet.bundle(new HeartbeatPacket(ClientId));
+                        m_connection.TcpSocket.Send(packet);
+                        m_lastHeartbeat = m_parentInterface.getTime();
+                    }
+                }
+
+                // Process the outbound queues
+                if (!(m_timer.ElapsedMilliseconds > Globals.UPDATES_TICK_TIME)) 
                     continue;
 
-                lock (m_connection)
-                {
-                    byte[] packet = Packet.bundle(new HeartbeatPacket(ClientId));
-                    m_connection.TcpSocket.Send(packet);
-                    m_lastHeartbeat = m_parentInterface.getTime();
-                }
+                // Handle outgoing messages
+                handleOutgoingMessages();
+
+                // Clear the queues
+                clearQueue(m_tcpPacketQueue);
+                clearQueue(m_udpPacketQueue);
+
+                // Restart the timer
+                m_timer.Restart();
             }
         }
 
         public void sendPositionUpdate(Orientation newOrientation)
         {
-            
+            addPacketToQueue(m_udpPacketQueue, new PositionPacket(ClientId, newOrientation));
         }
 
         public void sendChatMessage(string message)
         {
-            
+            addPacketToQueue(m_tcpPacketQueue, new ChatPacket(ClientId, Name, message));
         }
 
         public void closeConnection()
@@ -229,11 +248,11 @@ namespace Squirrel.Client
                         SocketFlags.None, handleReceivePackets, bundle);
                 }
             }
-            catch (SocketException exception)
+            catch (SocketException)
             {
                 closeConnection();
             }
-            catch (Exception exception)
+            catch
             {
             }
         }
@@ -278,7 +297,7 @@ namespace Squirrel.Client
             }
             catch
             {
-                // Failed to unbundle packet. Discard and return..
+                // Failed to unbundle packet. Discard and return.
                 return;
             }
 
@@ -288,9 +307,14 @@ namespace Squirrel.Client
             {
                 switch (packet.PacketType)
                 {
+                    case PacketType.NEW_CLIENT_PACKET:
+
+                        break;
+
                     case PacketType.CHAT_PACKET:
 
                         ChatPacket chatPacket = (ChatPacket)packet;
+                        m_parentInterface.clientChat(chatPacket.Name, chatPacket.Message);
 
                         break;
 
@@ -304,11 +328,77 @@ namespace Squirrel.Client
 
                         ClientDisconnectPacket discoPacket = (ClientDisconnectPacket)packet;
                         removeClient(discoPacket.ClientId);
+                        m_parentInterface.postClientDisconnectedToChat(discoPacket.ClientId);
 
                         break;
                 }
             }
+        }
 
+        // Handle coordinating all clients
+        private void handleOutgoingMessages()
+        {
+            Packet[] tcpQueue;
+            Packet[] udpQueue;
+
+            lock (m_tcpPacketQueue)
+            {
+                tcpQueue = m_tcpPacketQueue.ToArray();
+            }
+
+            lock (m_udpPacketQueue)
+            {
+                udpQueue = m_udpPacketQueue.ToArray();
+            }
+
+            // Check if the connection is valid (not null)
+            if (!Connection.connectionValid(m_connection))
+                return;
+
+            // If there is anything in the tcp queue
+            if (tcpQueue.Any())
+                sendPacketQueue(m_connection.TcpSocket, tcpQueue, m_connection.ClientId, m_connection.RemoteEndPoint);
+
+            // If there is anything in the udp queue
+            if (udpQueue.Any())
+                sendPacketQueue(m_connection.UdpSocket, udpQueue, m_connection.ClientId, m_connection.RemoteEndPoint);
+        }
+
+        // Sends packets from the provided queue to the provided socket
+        // Client ID is for information output only
+        private static void sendPacketQueue(Socket socket, Packet[] queue, int clientId, EndPoint endPoint)
+        {
+            lock (queue)
+            {
+                try
+                {
+                    foreach (byte[] rawArray in queue.Select(Packet.bundle))
+                    {
+                        // Send the packets!
+                        socket.SendTo(rawArray, endPoint);
+                    }
+                }
+                catch
+                {
+                    
+                }
+            }
+        }
+
+        private static void addPacketToQueue(List<Packet> queue, Packet packet)
+        {
+            lock (queue)
+            {
+                queue.Add(packet);
+            }
+        }
+
+        private static void clearQueue(List<Packet> queue)
+        {
+            lock (queue)
+            {
+                queue.Clear();
+            }
         }
     }
 }

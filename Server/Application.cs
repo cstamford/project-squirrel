@@ -80,7 +80,7 @@ namespace Squirrel.Server
         {
             ActiveConnections = new List<Connection>();
             ClientLocations = new Dictionary<int, Orientation>();
-            LogLevel = LogVerbosity.LOG_DEBUG;
+            LogLevel = LogVerbosity.LOG_VERBOSE;
 
             Console.Title = "Project Squirrel Server";
 

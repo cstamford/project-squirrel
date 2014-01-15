@@ -28,10 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Interface));
             this.MainLayoutGrid = new System.Windows.Forms.TableLayoutPanel();
             this.GameLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.GameWindow = new Squirrel.Client.Interface.GameWindow(this);
             this.ChatLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.ChatBarLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.SendChatButton = new System.Windows.Forms.Button();
@@ -42,6 +40,7 @@
             this.MenuButtonConnect = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonReconnect = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonExit = new System.Windows.Forms.ToolStripMenuItem();
+            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
             this.MainLayoutGrid.SuspendLayout();
             this.GameLayoutPanel.SuspendLayout();
             this.ChatLayoutPanel.SuspendLayout();
@@ -81,14 +80,6 @@
             this.GameLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.GameLayoutPanel.Size = new System.Drawing.Size(1011, 738);
             this.GameLayoutPanel.TabIndex = 1;
-            // 
-            // GameWindow
-            // 
-            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.GameWindow.Location = new System.Drawing.Point(3, 3);
-            this.GameWindow.Name = "GameWindow";
-            this.GameWindow.Size = new System.Drawing.Size(1005, 702);
-            this.GameWindow.TabIndex = 0;
             // 
             // ChatLayoutPanel
             // 
@@ -135,6 +126,7 @@
             this.SendChatButton.TabIndex = 0;
             this.SendChatButton.Text = "Send";
             this.SendChatButton.UseVisualStyleBackColor = true;
+            this.SendChatButton.Click += new System.EventHandler(this.SendChatButton_Click);
             // 
             // ChatOutgoingTextBox
             // 
@@ -197,6 +189,14 @@
             this.MenuButtonExit.Size = new System.Drawing.Size(130, 22);
             this.MenuButtonExit.Text = "Exit";
             // 
+            // GameWindow
+            // 
+            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.GameWindow.Location = new System.Drawing.Point(3, 3);
+            this.GameWindow.Name = "GameWindow";
+            this.GameWindow.Size = new System.Drawing.Size(1005, 702);
+            this.GameWindow.TabIndex = 0;
+            // 
             // Interface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -237,7 +237,7 @@
         private System.Windows.Forms.Button SendChatButton;
         private System.Windows.Forms.TextBox ChatOutgoingTextBox;
         private System.Windows.Forms.TextBox ChatIncomingTextBox;
-        private Squirrel.Client.Interface.GameWindow GameWindow;
+        private GameWindow GameWindow;
 
     }
 }

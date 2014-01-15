@@ -77,6 +77,13 @@ namespace Squirrel.Client.Interface
             }
         }
 
+        public void clientChat(string name, string message)
+        {
+            // Run on the UI thread
+            Invoke((MethodInvoker) (() => 
+                ChatIncomingTextBox.AppendText("[" + name + "]: " + message + Environment.NewLine)));
+        }
+
         public void clientMoved(int clientId, Entity entity)
         {
         }
@@ -84,7 +91,7 @@ namespace Squirrel.Client.Interface
         public void clientConnected(Entity entity)
         {
             // Run on the UI thread
-            Invoke((MethodInvoker)delegate
+            Invoke((MethodInvoker) delegate
             {
                 lock (GameWindow.RenderList)
                 {
@@ -96,10 +103,17 @@ namespace Squirrel.Client.Interface
             });
         }
 
+        public void postClientConnectedToChat(int clientId)
+        {
+            // Run on the UI thread
+            Invoke((MethodInvoker)(() =>
+                ChatIncomingTextBox.AppendText("Client " + clientId + " connected." + Environment.NewLine)));
+        }
+
         public void clientDisconnected(Entity entity)
         {
             // Run on the UI thread
-            Invoke((MethodInvoker)delegate
+            Invoke((MethodInvoker) delegate
             {
                 lock (GameWindow.RenderList)
                 {
@@ -107,6 +121,22 @@ namespace Squirrel.Client.Interface
                     GameWindow.Invalidate();
                 }
             });
+        }
+
+        public void postClientDisconnectedToChat(int clientId)
+        {
+            // Run on the UI thread
+            Invoke((MethodInvoker)(() =>
+                ChatIncomingTextBox.AppendText("Client " + clientId + " disconnected." + Environment.NewLine)));
+        }
+
+
+        private void SendChatButton_Click(object sender, EventArgs e)
+        {
+            string text = ChatOutgoingTextBox.Text;
+            ChatOutgoingTextBox.Text = "";
+
+            m_client.sendChatMessage(text);
         }
     }
 }

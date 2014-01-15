@@ -262,6 +262,7 @@ namespace Squirrel.Server
 
                         ChatPacket chatPacket = (ChatPacket) packet;
                         addPacketToQueue(m_tcpPacketQueue, chatPacket);
+                        write(chatPacket.Name + ": " + chatPacket.Message, LogVerbosity.LOG_MINIMAL);
                         break;
 
                     case PacketType.POSITION_PACKET:
