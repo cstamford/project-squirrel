@@ -65,13 +65,19 @@ namespace Squirrel.Server
             write("Thread ended");
         }
 
+        public void clientConnected(int clientId, Orientation orientation)
+        {
+            lock (m_tcpPacketQueue)
+            {
+                m_tcpPacketQueue.Add(new ClientConnectPacket(clientId, orientation));
+            }
+        }
+
         public void clientDisconnected(int clientId)
         {
             lock (m_tcpPacketQueue)
             {
-                ClientDisconnectPacket packet = new ClientDisconnectPacket(clientId);
-                m_tcpPacketQueue.Add(packet);
-                //write();
+                m_tcpPacketQueue.Add(new ClientDisconnectPacket(clientId));
             }
         }
 

@@ -48,7 +48,7 @@
     <Compile Include="Packets\ChatPacket.cs" />
     <Compile Include="Packets\ClientDisconnectPacket.cs" />
     <Compile Include="Packets\HeartbeatPacket.cs" />
-    <Compile Include="Packets\NewClientPacket.cs" />
+    <Compile Include="Packets\ClientConnectPacket.cs" />
     <Compile Include="Packets\PacketType.cs" />
     <Compile Include="Packets\PositionPacket.cs" />
     <Compile Include="Packets\Packet.cs" />

@@ -5,24 +5,24 @@ using Squirrel.Data;
 namespace Squirrel.Packets
 {    
     [Serializable]
-    public class NewClientPacket : Packet
+    public class ClientConnectPacket : Packet
     {
         public Orientation Orientation { get; set; }
 
-        public NewClientPacket()
-            : base(PacketType.NEW_CLIENT_PACKET, -1)
+        public ClientConnectPacket()
+            : base(PacketType.CLIENT_CONNECT_PACKET, -1)
         {
             Orientation = new Orientation();
         }
 
-        public NewClientPacket(int clientId, Orientation orientation) 
-            : base(PacketType.NEW_CLIENT_PACKET, clientId)
+        public ClientConnectPacket(int clientId, Orientation orientation) 
+            : base(PacketType.CLIENT_CONNECT_PACKET, clientId)
         {
             Orientation = orientation;
         }
 
-        public NewClientPacket(int clientId, float x, float y, float rotation)
-            : base(PacketType.NEW_CLIENT_PACKET, clientId)
+        public ClientConnectPacket(int clientId, float x, float y, float rotation)
+            : base(PacketType.CLIENT_CONNECT_PACKET, clientId)
         {
             Orientation = new Orientation(x, y, rotation);
         }

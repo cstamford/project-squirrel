@@ -100,7 +100,7 @@ namespace Squirrel.Server
                             (float)rng.NextDouble() * 360.0f);
 
                         // Make the new client packet
-                        NewClientPacket packet = new NewClientPacket(clientId, orientation);
+                        ClientConnectPacket packet = new ClientConnectPacket(clientId, orientation);
 
                         // Bundle and send the packet
                         connection.TcpSocket.Send(Packet.bundle(packet));
@@ -111,6 +111,7 @@ namespace Squirrel.Server
 
                         // Add the location
                         Application.updateClientLocation(connection.ClientId, orientation);
+                        Application.clientConnected(connection.ClientId, orientation);
 
                         // Add the connection
                         Application.ActiveConnections.Add(connection);

@@ -76,6 +76,11 @@ namespace Squirrel.Server
             }
         }
 
+        public static void clientConnected(int clientId, Orientation orientation)
+        {
+            m_server.clientConnected(clientId, orientation);
+        }
+
         private static void Main(string[] args)
         {
             ActiveConnections = new List<Connection>();

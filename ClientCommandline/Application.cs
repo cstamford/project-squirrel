@@ -55,10 +55,10 @@ namespace ClientCommandline
                 Packet[] packetsReceived = Packet.unbundle(rawBuffer);
 
                 // Select the orientation packet from the bundle
-                foreach (NewClientPacket ncPacket in packetsReceived.Where(packet => packet.PacketType == PacketType.NEW_CLIENT_PACKET).Cast<NewClientPacket>())
+                foreach (ClientConnectPacket ncPacket in packetsReceived.Where(packet => packet.PacketType == PacketType.CLIENT_CONNECT_PACKET).Cast<ClientConnectPacket>())
                 {
                     m_clientId = ncPacket.ClientId;
-                    m_udpSocket.SendTo(Packet.bundle(new NewClientPacket(ncPacket.ClientId, ncPacket.Orientation)), m_tcpSocket.RemoteEndPoint);
+                    m_udpSocket.SendTo(Packet.bundle(new ClientConnectPacket(ncPacket.ClientId, ncPacket.Orientation)), m_tcpSocket.RemoteEndPoint);
                 }
             }
             catch (Exception exception)

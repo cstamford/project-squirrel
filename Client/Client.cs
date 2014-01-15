@@ -77,7 +77,7 @@ namespace Squirrel.Client
                 Packet[] packetsReceived = Packet.unbundle(rawBuffer);
 
                 // Select the orientation packet from the bundle
-                foreach (NewClientPacket ncPacket in packetsReceived.Where(packet => packet.PacketType == PacketType.NEW_CLIENT_PACKET).Cast<NewClientPacket>())
+                foreach (ClientConnectPacket ncPacket in packetsReceived.Where(packet => packet.PacketType == PacketType.CLIENT_CONNECT_PACKET).Cast<ClientConnectPacket>())
                 {
                     ClientId = ncPacket.ClientId;
 
@@ -307,7 +307,11 @@ namespace Squirrel.Client
             {
                 switch (packet.PacketType)
                 {
-                    case PacketType.NEW_CLIENT_PACKET:
+                    case PacketType.CLIENT_CONNECT_PACKET:
+
+                        ClientConnectPacket connectPacket = (ClientConnectPacket)packet;
+                        updateClientPosition(connectPacket.ClientId, connectPacket.Orientation);
+                        m_parentInterface.postClientConnectedToChat(connectPacket.ClientId);
 
                         break;
 
