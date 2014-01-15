@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
+using System.Net;
 using System.Windows.Forms;
 
 namespace Squirrel.Client.Interface
@@ -14,6 +9,42 @@ namespace Squirrel.Client.Interface
         public ConnectDialog()
         {
             InitializeComponent();
+        }
+
+        private void ButtonConnect_Click(object sender, System.EventArgs e)
+        {
+            IPAddress address;
+            int port;
+            string name;
+
+            try
+            {
+                address = IPAddress.Parse(TextBoxIP.Text);
+                port = int.Parse(TextBoxPort.Text);
+                name = TextBoxNickname.Text;
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.ToString());
+                return;
+            }
+
+            try
+            {
+                if (((Interface)Owner).connect(address, port, name))
+                {
+                    MessageBox.Show("Connected!");
+                    Close();
+                }
+                else
+                {
+                    MessageBox.Show("Failed to connect!!");
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.ToString());
+            }
         }
     }
 }

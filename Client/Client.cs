@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using Squirrel.Client.Objects;
@@ -129,16 +127,7 @@ namespace Squirrel.Client
             {
                 handleIncomingMessages();
 
-                // Heartbeat time
-                if (m_parentInterface.getTime() > m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY)
-                {
-                    lock (m_connection)
-                    {
-                        byte[] packet = Packet.bundle(new HeartbeatPacket(ClientId));
-                        m_connection.TcpSocket.Send(packet);
-                        m_lastHeartbeat = m_parentInterface.getTime();
-                    }
-                }
+                handleHeartbeat();
 
                 // Process the outbound queues
                 if (!(m_timer.ElapsedMilliseconds > Globals.UPDATES_TICK_TIME)) 
@@ -156,6 +145,11 @@ namespace Squirrel.Client
             }
         }
 
+        public bool isConnected()
+        {
+            return m_connected;
+        }
+
         public void sendPositionUpdate(Orientation newOrientation)
         {
             addPacketToQueue(m_udpPacketQueue, new PositionPacket(ClientId, newOrientation));
@@ -166,8 +160,13 @@ namespace Squirrel.Client
             addPacketToQueue(m_tcpPacketQueue, new ChatPacket(ClientId, Name, message));
         }
 
-        public void closeConnection()
+        public void closeConnection(bool closeSockets = true)
         {
+            m_connected = false;
+
+            if (!Connection.connectionValid(m_connection) || !closeSockets)
+                return;
+
             lock (m_connection)
             {
                 if (m_connection.TcpSocket != null)
@@ -181,14 +180,9 @@ namespace Squirrel.Client
                     m_connection.UdpSocket.Close();
                     m_connection.UdpSocket = null;
                 }
-
-                m_connected = false;
             }
-        }
 
-        public bool isConnected()
-        {
-            return m_connected;
+            m_parentInterface.onDisconnect();
         }
 
         private void updateClientPosition(int clientId, Orientation orientation)
@@ -257,6 +251,26 @@ namespace Squirrel.Client
             }
         }
 
+        private void handleHeartbeat()
+        {
+            // Heartbeat time
+            if (m_parentInterface.getTime() <= m_lastHeartbeat + Globals.PACKET_HEARTBEAT_FREQUENCY) 
+                return;
+
+            lock (m_connection)
+            {
+                try
+                {
+                    byte[] packet = Packet.bundle(new HeartbeatPacket(ClientId));
+                    m_connection.TcpSocket.Send(packet);
+                    m_lastHeartbeat = m_parentInterface.getTime();
+                }
+                catch
+                {
+                    closeConnection();
+                }
+            }
+        }
 
         private void handleReceivePackets(IAsyncResult ar)
         {
@@ -276,8 +290,7 @@ namespace Squirrel.Client
             }
             catch
             {
-                // This exception doesn't need to be handled - it's just complaining
-                // about disposed sockets due to a client disconnect / kick
+                closeConnection();
             }
 
             // If we haven't received a proper packet, leave
@@ -370,7 +383,7 @@ namespace Squirrel.Client
 
         // Sends packets from the provided queue to the provided socket
         // Client ID is for information output only
-        private static void sendPacketQueue(Socket socket, Packet[] queue, int clientId, EndPoint endPoint)
+        private void sendPacketQueue(Socket socket, Packet[] queue, int clientId, EndPoint endPoint)
         {
             lock (queue)
             {
@@ -384,12 +397,12 @@ namespace Squirrel.Client
                 }
                 catch
                 {
-                    
+                    closeConnection();
                 }
             }
         }
 
-        private static void addPacketToQueue(List<Packet> queue, Packet packet)
+        private void addPacketToQueue(List<Packet> queue, Packet packet)
         {
             lock (queue)
             {
@@ -397,7 +410,7 @@ namespace Squirrel.Client
             }
         }
 
-        private static void clearQueue(List<Packet> queue)
+        private void clearQueue(List<Packet> queue)
         {
             lock (queue)
             {

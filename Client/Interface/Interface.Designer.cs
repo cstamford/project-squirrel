@@ -30,6 +30,7 @@
         {
             this.MainLayoutGrid = new System.Windows.Forms.TableLayoutPanel();
             this.GameLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
             this.ChatLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.ChatBarLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.SendChatButton = new System.Windows.Forms.Button();
@@ -38,9 +39,8 @@
             this.MainMenu = new System.Windows.Forms.MenuStrip();
             this.MenuButtonFile = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonConnect = new System.Windows.Forms.ToolStripMenuItem();
-            this.MenuButtonReconnect = new System.Windows.Forms.ToolStripMenuItem();
+            this.MenuButtonDisconnect = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuButtonExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.GameWindow = new Squirrel.Client.Interface.GameWindow();
             this.MainLayoutGrid.SuspendLayout();
             this.GameLayoutPanel.SuspendLayout();
             this.ChatLayoutPanel.SuspendLayout();
@@ -80,6 +80,14 @@
             this.GameLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.GameLayoutPanel.Size = new System.Drawing.Size(1011, 738);
             this.GameLayoutPanel.TabIndex = 1;
+            // 
+            // GameWindow
+            // 
+            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.GameWindow.Location = new System.Drawing.Point(3, 3);
+            this.GameWindow.Name = "GameWindow";
+            this.GameWindow.Size = new System.Drawing.Size(1005, 702);
+            this.GameWindow.TabIndex = 0;
             // 
             // ChatLayoutPanel
             // 
@@ -143,9 +151,11 @@
             // 
             this.ChatIncomingTextBox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.ChatIncomingTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ChatIncomingTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.ChatIncomingTextBox.Location = new System.Drawing.Point(6, 6);
             this.ChatIncomingTextBox.Multiline = true;
             this.ChatIncomingTextBox.Name = "ChatIncomingTextBox";
+            this.ChatIncomingTextBox.ReadOnly = true;
             this.ChatIncomingTextBox.Size = new System.Drawing.Size(241, 701);
             this.ChatIncomingTextBox.TabIndex = 1;
             // 
@@ -165,7 +175,7 @@
             // 
             this.MenuButtonFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.MenuButtonConnect,
-            this.MenuButtonReconnect,
+            this.MenuButtonDisconnect,
             this.MenuButtonExit});
             this.MenuButtonFile.Name = "MenuButtonFile";
             this.MenuButtonFile.Size = new System.Drawing.Size(37, 20);
@@ -174,28 +184,24 @@
             // MenuButtonConnect
             // 
             this.MenuButtonConnect.Name = "MenuButtonConnect";
-            this.MenuButtonConnect.Size = new System.Drawing.Size(130, 22);
+            this.MenuButtonConnect.Size = new System.Drawing.Size(133, 22);
             this.MenuButtonConnect.Text = "Connect";
+            this.MenuButtonConnect.Click += new System.EventHandler(this.MenuButtonConnect_Click);
             // 
-            // MenuButtonReconnect
+            // MenuButtonDisconnect
             // 
-            this.MenuButtonReconnect.Name = "MenuButtonReconnect";
-            this.MenuButtonReconnect.Size = new System.Drawing.Size(130, 22);
-            this.MenuButtonReconnect.Text = "Reconnect";
+            this.MenuButtonDisconnect.Enabled = false;
+            this.MenuButtonDisconnect.Name = "MenuButtonDisconnect";
+            this.MenuButtonDisconnect.Size = new System.Drawing.Size(133, 22);
+            this.MenuButtonDisconnect.Text = "Disconnect";
+            this.MenuButtonDisconnect.Click += new System.EventHandler(this.MenuButtonDisconnect_Click);
             // 
             // MenuButtonExit
             // 
             this.MenuButtonExit.Name = "MenuButtonExit";
-            this.MenuButtonExit.Size = new System.Drawing.Size(130, 22);
+            this.MenuButtonExit.Size = new System.Drawing.Size(133, 22);
             this.MenuButtonExit.Text = "Exit";
-            // 
-            // GameWindow
-            // 
-            this.GameWindow.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.GameWindow.Location = new System.Drawing.Point(3, 3);
-            this.GameWindow.Name = "GameWindow";
-            this.GameWindow.Size = new System.Drawing.Size(1005, 702);
-            this.GameWindow.TabIndex = 0;
+            this.MenuButtonExit.Click += new System.EventHandler(this.MenuButtonExit_Click);
             // 
             // Interface
             // 
@@ -231,7 +237,7 @@
         private System.Windows.Forms.TableLayoutPanel GameLayoutPanel;
         private System.Windows.Forms.ToolStripMenuItem MenuButtonFile;
         private System.Windows.Forms.ToolStripMenuItem MenuButtonConnect;
-        private System.Windows.Forms.ToolStripMenuItem MenuButtonReconnect;
+        private System.Windows.Forms.ToolStripMenuItem MenuButtonDisconnect;
         private System.Windows.Forms.ToolStripMenuItem MenuButtonExit;
         private System.Windows.Forms.TableLayoutPanel ChatBarLayoutPanel;
         private System.Windows.Forms.Button SendChatButton;

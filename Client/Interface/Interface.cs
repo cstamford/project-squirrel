@@ -44,37 +44,36 @@ namespace Squirrel.Client.Interface
             return m_globalTimer.ElapsedMilliseconds;
         }
 
+        public bool connect(IPAddress ip, int port, string name)
+        {
+            // Leave if we're already connected
+            if (m_client != null && !m_client.isConnected())
+                return false;
+
+            // Make a new client to handle this connection attempt
+            m_client = new Client(this);
+
+            if (!m_client.connect(ip, port, name)) 
+                return false;
+
+            // Start the client thread
+            m_clientThread = new Thread(m_client.run);
+            m_clientThread.Start();
+
+            MenuButtonDisconnect.Enabled = true;
+
+            return true;
+        }
+
         private void Interface_Load(object sender, System.EventArgs e)
         {
             m_globalTimer.Start();
-            m_client = new Client(this);
-
-            try
-            {
-                if (m_client.connect(IPAddress.Parse("127.0.0.1"), 37500, "Test"))
-                {
-                    m_clientThread = new Thread(m_client.run);
-                    m_clientThread.Start();
-                }
-                else
-                {
-                    MessageBox.Show("Failed to connect");
-                }
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show(exception.ToString());
-            }
         }
 
         private void Interface_FormClosing(object sender, FormClosingEventArgs e)
         {
-            m_client.closeConnection();
-
-            if (m_clientThread != null)
-            {
-                m_clientThread.Join();
-            }
+            if (m_client != null)
+                m_client.closeConnection(false);
         }
 
         public void clientChat(string name, string message)
@@ -130,6 +129,20 @@ namespace Squirrel.Client.Interface
                 ChatIncomingTextBox.AppendText("Client " + clientId + " disconnected." + Environment.NewLine)));
         }
 
+        public void onDisconnect()
+        {           
+            // Run on the UI thread
+            Invoke((MethodInvoker) delegate
+            {
+                lock (GameWindow.RenderList)
+                {
+                    GameWindow.RenderList.Clear();
+                    GameWindow.Invalidate();
+                }
+
+                MenuButtonDisconnect.Enabled = false;
+            });
+        }
 
         private void SendChatButton_Click(object sender, EventArgs e)
         {
@@ -137,6 +150,22 @@ namespace Squirrel.Client.Interface
             ChatOutgoingTextBox.Text = "";
 
             m_client.sendChatMessage(text);
+        }
+
+        private void MenuButtonConnect_Click(object sender, EventArgs e)
+        {
+            ConnectDialog connectDialog = new ConnectDialog();
+            connectDialog.ShowDialog(this);
+        }
+
+        private void MenuButtonDisconnect_Click(object sender, EventArgs e)
+        {
+            m_client.closeConnection();
+        }
+
+        private void MenuButtonExit_Click(object sender, EventArgs e)
+        {
+            Close();
         }
     }
 }

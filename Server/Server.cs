@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Threading;
 using Squirrel.Data;
 using Squirrel.Packets;
 
@@ -43,12 +41,8 @@ namespace Squirrel.Server
                     if (m_timer.ElapsedMilliseconds < Globals.UPDATES_TICK_TIME)
                         continue;
 
-                    // Build packets from every client location and place them in a list
-                    List<PositionPacket> packetList
-                        = Application.ClientLocations.Select(pair => new PositionPacket(pair.Key, pair.Value)).ToList();
-
                     // Add the list to the UDP queue
-                    addPacketsToQueue(m_udpPacketQueue, packetList);
+                    addPacketsToQueue(m_udpPacketQueue, getPositionPacketList());
 
                     // Handle outgoing messages
                     handleOutgoingMessages();
@@ -168,8 +162,8 @@ namespace Squirrel.Server
         {
             lock (queue)
             {
-                // Don't send packets to a client with his own location
-                foreach (Packet packet in queue.Where(packet => packet.ClientId != clientId))
+                // Don't send packets to the client where it originiated from, unless it's a chat packet
+                foreach (Packet packet in queue.Where(packet => packet.ClientId != clientId || packet.PacketType == PacketType.CHAT_PACKET))
                 {
                     byte[] rawArray = Packet.bundle(packet);
 
@@ -279,6 +273,11 @@ namespace Squirrel.Server
                 }
             }
 
+        }
+
+        private List<Packet> getPositionPacketList()
+        {
+           return Application.ClientLocations.Select(pair => new PositionPacket(pair.Key, pair.Value)).Cast<Packet>().ToList();
         }
 
         private void addPacketToQueue(List<Packet> queue, Packet packet)

@@ -7,7 +7,7 @@
 
         public const int PACKET_BUFFER_SIZE = 1024;
         public const int PACKET_HEARTBEAT_FREQUENCY = 1000;
-        public const int PACKET_TIME_OUT = 5000;
+        public const int PACKET_TIME_OUT = 500000;
 
         public const float UPDATES_PER_SECOND = 50.0f;
         public const float UPDATES_TICK_TIME = 1000.0f / UPDATES_PER_SECOND;

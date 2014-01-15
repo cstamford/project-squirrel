@@ -80,6 +80,9 @@
     <Compile Include="Objects\Entity.cs" />
     <Compile Include="Objects\Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Interface\ConnectDialog.resx">
+      <DependentUpon>ConnectDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Interface.resx">
       <DependentUpon>Interface.cs</DependentUpon>
     </EmbeddedResource>
