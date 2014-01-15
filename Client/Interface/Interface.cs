@@ -22,6 +22,7 @@ namespace Squirrel.Client.Interface
         private Client m_client;
         private Thread m_clientThread;
         private readonly Bitmap m_triangle;
+        private readonly Bitmap m_bubble;
         private readonly Stopwatch m_globalTimer = new Stopwatch();
 
         public Interface()
@@ -39,6 +40,20 @@ namespace Squirrel.Client.Interface
                 {
                     Image img = Image.FromStream(BitmapStream);
                     m_triangle = new Bitmap(img);
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.ToString());
+            }
+
+            try
+            {
+                using (Stream BitmapStream = System.IO.File.Open(Path.Combine(assetPath, "bubble.png"),
+                        System.IO.FileMode.Open))
+                {
+                    Image img = Image.FromStream(BitmapStream);
+                    m_bubble = new Bitmap(img);
                 }
             }
             catch (Exception exception)
@@ -126,7 +141,7 @@ namespace Squirrel.Client.Interface
         // Adds a projectile
         public void addProjectile(Data.Orientation projectile)
         {
-            Projectile proj = new Projectile(m_triangle, projectile);
+            Projectile proj = new Projectile(m_bubble, projectile);
 
             lock (m_client.ProjectileList)
             {
@@ -200,9 +215,9 @@ namespace Squirrel.Client.Interface
 
                             if (ent is Projectile && ent == projectile && 
                                 (projectile.Orientation.Position.x < -50 ||
-                                projectile.Orientation.Position.y < 0 ||
-                                projectile.Orientation.Position.x > Globals.GAME_WIDTH + 50 ||
-                                projectile.Orientation.Position.y > Globals.GAME_HEIGHT + 50))
+                                projectile.Orientation.Position.y < -50 ||
+                                projectile.Orientation.Position.x > Width ||
+                                projectile.Orientation.Position.y > Height ))
                             {
                                 GameWindow.RenderList.Remove(ent);
                                 m_client.ProjectileList.Remove(projectile);
